@@ -25,6 +25,16 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [isRecurringOpen, setIsRecurringOpen] = useState(false);
+  const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
+
+  const toggleSort = (type: string) => {
+    setSortedTypes(prev => { const s = new Set(prev); s.has(type) ? s.delete(type) : s.add(type); return s; });
+  };
+
+  const getSortedItems = (items: LineItem[], type: string) => {
+    if (!sortedTypes.has(type)) return items;
+    return [...items].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  };
 
   const [singleDesc, setSingleDesc] = useState('');
   const [singleAmount, setSingleAmount] = useState('');
@@ -167,15 +177,22 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     const chooseMode = `choose-${itemType}` as AddMode;
     const singleMode = `single-${itemType}` as AddMode;
     const recurringMode = `recurring-${itemType}` as AddMode;
+    const isSorted = sortedTypes.has(type);
+    const displayItems = getSortedItems(items, type);
 
     return (
       <section style={{ marginBottom: '12px' }}>
         <div style={{ borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: headerBg, padding: '10px 12px' }}>
             <span style={{ color: '#fff', fontWeight: '500', fontSize: '15px' }}>{label}</span>
-            {!addMode && (
-              <button onClick={() => setAddMode(chooseMode)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}>+ הוסף</button>
-            )}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => toggleSort(type)} style={{ background: isSorted ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '4px 8px', cursor: 'pointer' }}>
+                {isSorted ? '↑ תאריך' : '⇅ מיין'}
+              </button>
+              {!addMode && (
+                <button onClick={() => setAddMode(chooseMode)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}>+ הוסף</button>
+              )}
+            </div>
           </div>
 
           {addMode === chooseMode && choosePanel(itemType)}
@@ -193,9 +210,9 @@ export default function GeneralTab({ state, onStateChange }: Props) {
               </tr>
             </thead>
             <tbody>
-              {items.length === 0 ? (
+              {displayItems.length === 0 ? (
                 <tr><td colSpan={5} style={{ textAlign: 'center', color: '#9CA3AF', padding: '24px' }}>אין {label} עדיין</td></tr>
-              ) : items.flatMap((item, index) => {
+              ) : displayItems.flatMap((item, index) => {
                 const isExpanded = expandedRows.has(item.id);
                 const hasNote = !!item.note;
                 let pressTimer: ReturnType<typeof setTimeout> | null = null;

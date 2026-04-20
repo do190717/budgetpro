@@ -42,7 +42,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
     const newProject: Project = {
       id: generateId(),
       name: newProjectName.trim(),
-      startDate: newProjectDeadline,
+      startDate: newProjectDeadline || new Date().toISOString().split('T')[0],
       endDate: '',
       income: [],
       expense: [],

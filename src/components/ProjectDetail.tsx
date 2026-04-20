@@ -33,6 +33,16 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(project.name);
+  const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
+
+  const toggleSort = (type: string) => {
+    setSortedTypes(prev => { const s = new Set(prev); s.has(type) ? s.delete(type) : s.add(type); return s; });
+  };
+
+  const getSortedItems = (items: LineItem[], type: string) => {
+    if (!sortedTypes.has(type)) return items;
+    return [...items].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  };
 
   const income = calcProjectIncome(project);
   const expense = calcProjectExpense(project);
@@ -56,8 +66,10 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
     });
   };
 
+  const today = new Date().toISOString().split('T')[0];
+
   const addRow = (type: 'income' | 'expense') => {
-    const newItem: LineItem = { id: generateId(), desc: '', amount: 0, note: '', date: '' };
+    const newItem: LineItem = { id: generateId(), desc: '', amount: 0, note: '', date: today };
     onUpdate({ ...project, [type]: [...project[type], newItem] });
   };
 
@@ -200,7 +212,9 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
 
   const tableSection = (type: 'income' | 'expense') => {
     const isIncome = type === 'income';
-    const items = isIncome ? project.income : project.expense;
+    const rawItems = isIncome ? project.income : project.expense;
+    const items = getSortedItems(rawItems, type);
+    const isSorted = sortedTypes.has(type);
     const total = isIncome ? income : expense;
     const headerBg = isIncome ? '#1D9E75' : '#D85A30';
     const summaryBg = isIncome ? '#EAF3DE' : '#FAECE7';
@@ -213,12 +227,21 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
         <div style={{ borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: headerBg, padding: '10px 12px' }}>
             <span style={{ color: '#fff', fontWeight: '500', fontSize: '15px' }}>{label}</span>
-            <button
-              onClick={() => addRow(type)}
-              style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}
-            >
-              + הוסף
-            </button>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => toggleSort(type)}
+                style={{ background: isSorted ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '4px 8px', cursor: 'pointer' }}
+                title="מיין לפי תאריך"
+              >
+                {isSorted ? '↑ תאריך' : '⇅ מיין'}
+              </button>
+              <button
+                onClick={() => addRow(type)}
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}
+              >
+                + הוסף
+              </button>
+            </div>
           </div>
 
           <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
