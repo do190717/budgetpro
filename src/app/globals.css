@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f9fafb;
+  --foreground: #111827;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+/* RTL Support */
+html {
+  direction: rtl;
+}
+
+/* Hebrew-friendly font stack */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans Hebrew", sans-serif;
+}
+
+/* Input direction fixes for RTL */
+input[type="number"] {
+  direction: ltr;
+  text-align: right;
+}
+
+input[type="date"] {
+  direction: ltr;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .space-y-8 > section {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Smaller text on mobile */
+  input, span, button {
+    font-size: 13px !important;
+  }
+
+  /* Tighter padding on mobile */
+  .px-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .py-3 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Table adjustments */
+  table {
+    font-size: 12px;
+  }
+
+  th, td {
+    padding: 0.5rem 0.25rem;
+  }
+}
