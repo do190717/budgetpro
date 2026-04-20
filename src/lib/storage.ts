@@ -14,6 +14,9 @@ const defaultState: AppState = {
   maasarPct: 10,
   maasarPayments: [],
   recurringPayments: [],
+  generalIncome: [],
+  generalExpense: [],
+  recurringGeneralItems: [],
 };
 
 export function loadState(): AppState {
