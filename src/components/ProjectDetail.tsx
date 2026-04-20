@@ -8,6 +8,7 @@ import {
   calcProjectExpense,
   calcProjectProfit,
 } from '@/lib/calculations';
+import ConfirmModal from './ConfirmModal';
 
 const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
 
@@ -34,6 +35,7 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(project.name);
   const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
+  const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
   const toggleSort = (type: string) => {
     setSortedTypes(prev => { const s = new Set(prev); s.has(type) ? s.delete(type) : s.add(type); return s; });
@@ -103,9 +105,13 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
 
       const handlePressStart = () => {
         pressTimer = setTimeout(() => {
-          if (confirm(`למחוק את השורה "${item.desc || 'ללא תיאור'}"?\nפעולה זו תשנה את החישובים.`)) {
-            deleteRow(type, item.id);
-          }
+          setConfirmState({
+            open: true,
+            title: `למחוק את השורה "${item.desc || 'ללא תיאור'}"?\nפעולה זו תשנה את החישובים.`,
+            onConfirm: () => {
+              deleteRow(type, item.id);
+            }
+          });
         }, 600);
       };
 
@@ -176,9 +182,13 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
             {hoveredRowId === item.id && (
               <button
                 onClick={() => {
-                  if (confirm(`למחוק "${item.desc || 'שורה'}"?\nפעולה זו תשנה את החישובים.`)) {
-                    deleteRow(type, item.id);
-                  }
+                  setConfirmState({
+                    open: true,
+                    title: `למחוק "${item.desc || 'שורה'}"?\nפעולה זו תשנה את החישובים.`,
+                    onConfirm: () => {
+                      deleteRow(type, item.id);
+                    }
+                  });
                 }}
                 onMouseDown={e => e.stopPropagation()}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '6px', fontSize: '14px' }}
@@ -356,6 +366,12 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
         {tableSection('expense')}
       </div>
 
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
+        onCancel={() => setConfirmState(s => ({...s, open: false}))}
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   formatCurrency,
   formatDate,
 } from '@/lib/calculations';
+import ConfirmModal from './ConfirmModal';
 
 interface FinanceTabProps {
   state: AppState;
@@ -36,6 +37,7 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   const [recurringDesc, setRecurringDesc] = useState('');
   const [recurringAmount, setRecurringAmount] = useState('');
   const [recurringDay, setRecurringDay] = useState('1');
+  const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
   const totalProfit = calcTotalProfit(state.projects);
   const totalDeductions = calcTotalDeductions(totalProfit, state.deductions);
@@ -85,9 +87,13 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   };
 
   const handleDeletePayment = (paymentId: string) => {
-    if (confirm('האם למחוק את ההפרשה?')) {
-      onStateChange(deleteMaasarPayment(state, paymentId));
-    }
+    setConfirmState({
+      open: true,
+      title: 'האם למחוק את ההפרשה?',
+      onConfirm: () => {
+        onStateChange(deleteMaasarPayment(state, paymentId));
+      }
+    });
   };
 
   const addNewDeduction = () => {
@@ -102,10 +108,14 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   };
 
   const deleteDeduction = (deductionId: string) => {
-    if (confirm('האם למחוק את הניכוי?')) {
-      const updated = state.deductions.filter(d => d.id !== deductionId);
-      onStateChange(updateDeductions(state, updated));
-    }
+    setConfirmState({
+      open: true,
+      title: 'האם למחוק את הניכוי?',
+      onConfirm: () => {
+        const updated = state.deductions.filter(d => d.id !== deductionId);
+        onStateChange(updateDeductions(state, updated));
+      }
+    });
   };
 
   const updateDeductionName = (deductionId: string, name: string) => {
@@ -139,7 +149,13 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   };
 
   const handleDeleteRecurring = (id: string) => {
-    if (confirm('האם למחוק את ההפרשה הקבועה?')) onStateChange(deleteRecurringPayment(state, id));
+    setConfirmState({
+      open: true,
+      title: 'האם למחוק את ההפרשה הקבועה?',
+      onConfirm: () => {
+        onStateChange(deleteRecurringPayment(state, id));
+      }
+    });
   };
 
   return (
@@ -471,6 +487,13 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
 
         </div>
       </section>
+
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
+        onCancel={() => setConfirmState(s => ({...s, open: false}))}
+      />
     </div>
   );
 }

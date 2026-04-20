@@ -17,6 +17,7 @@ import {
 import ProjectDetail from './ProjectDetail';
 import FinanceTab from './FinanceTab';
 import GeneralTab from './GeneralTab';
+import ConfirmModal from './ConfirmModal';
 
 interface DashboardProps {
   state: AppState;
@@ -36,6 +37,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
+  const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
@@ -55,9 +57,13 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
 
   const handleDeleteProject = (projectId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('האם למחוק את הפרויקט?')) {
-      onStateChange(deleteProject(state, projectId));
-    }
+    setConfirmState({
+      open: true,
+      title: 'האם למחוק את הפרויקט?',
+      onConfirm: () => {
+        onStateChange(deleteProject(state, projectId));
+      }
+    });
   };
 
   const handleProjectUpdate = (project: Project) => {
@@ -202,9 +208,13 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                   let pressTimer: ReturnType<typeof setTimeout> | null = null;
                   const handlePressStart = () => {
                     pressTimer = setTimeout(() => {
-                      if (confirm(`למחוק את הפרויקט "${project.name}"?`)) {
-                        onStateChange(deleteProject(state, project.id));
-                      }
+                      setConfirmState({
+                        open: true,
+                        title: `למחוק את הפרויקט "${project.name}"?`,
+                        onConfirm: () => {
+                          onStateChange(deleteProject(state, project.id));
+                        }
+                      });
                     }, 600);
                   };
                   const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
@@ -273,6 +283,13 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
           </>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
+        onCancel={() => setConfirmState(s => ({...s, open: false}))}
+      />
     </div>
   );
 }

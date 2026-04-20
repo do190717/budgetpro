@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AppState, LineItem, RecurringGeneralItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
 import { calcGeneralIncome, calcGeneralExpense } from '@/lib/calculations';
+import ConfirmModal from './ConfirmModal';
 
 const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
 
@@ -26,6 +27,7 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [isRecurringOpen, setIsRecurringOpen] = useState(false);
   const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
+  const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
   const toggleSort = (type: string) => {
     setSortedTypes(prev => { const s = new Set(prev); s.has(type) ? s.delete(type) : s.add(type); return s; });
@@ -87,9 +89,13 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   };
 
   const handleDeleteRecurring = (id: string) => {
-    if (confirm('למחוק את הפריט הקבוע?')) {
-      onStateChange({ ...state, recurringGeneralItems: recurringItems.filter(r => r.id !== id) });
-    }
+    setConfirmState({
+      open: true,
+      title: 'למחוק את הפריט הקבוע?',
+      onConfirm: () => {
+        onStateChange({ ...state, recurringGeneralItems: recurringItems.filter(r => r.id !== id) });
+      }
+    });
   };
 
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none';
@@ -216,7 +222,15 @@ export default function GeneralTab({ state, onStateChange }: Props) {
                 const isExpanded = expandedRows.has(item.id);
                 const hasNote = !!item.note;
                 let pressTimer: ReturnType<typeof setTimeout> | null = null;
-                const handlePressStart = () => { pressTimer = setTimeout(() => { if (confirm(`למחוק "${item.desc || 'שורה'}"?`)) deleteRow(type, item.id); }, 600); };
+                const handlePressStart = () => {
+                  pressTimer = setTimeout(() => {
+                    setConfirmState({
+                      open: true,
+                      title: `למחוק "${item.desc || 'שורה'}"?`,
+                      onConfirm: () => { deleteRow(type, item.id); }
+                    });
+                  }, 600);
+                };
                 const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
 
                 const rows = [
@@ -238,7 +252,19 @@ export default function GeneralTab({ state, onStateChange }: Props) {
                       <button onClick={() => toggleExpand(item.id)} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: hasNote ? '#2563EB' : '#9CA3AF', padding: '8px' }}>{isExpanded ? '▲' : '▼'}</button>
                     </td>
                     <td style={{ width: '8%', textAlign: 'center' }}>
-                      {hoveredRowId === item.id && (<button onClick={() => { if (confirm(`למחוק "${item.desc || 'שורה'}"?`)) deleteRow(type, item.id); }} onMouseDown={e => e.stopPropagation()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '6px', fontSize: '14px' }}>✕</button>)}
+                      {hoveredRowId === item.id && (
+                        <button
+                          onClick={() => {
+                            setConfirmState({
+                              open: true,
+                              title: `למחוק "${item.desc || 'שורה'}"?`,
+                              onConfirm: () => { deleteRow(type, item.id); }
+                            });
+                          }}
+                          onMouseDown={e => e.stopPropagation()}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '6px', fontSize: '14px' }}
+                        >✕</button>
+                      )}
                     </td>
                   </tr>
                 ];
@@ -318,6 +344,13 @@ export default function GeneralTab({ state, onStateChange }: Props) {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
+        onCancel={() => setConfirmState(s => ({...s, open: false}))}
+      />
     </div>
   );
 }
