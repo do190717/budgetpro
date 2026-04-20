@@ -11,7 +11,10 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(dir:*)",
-      "Bash(timeout /t 3:*)"
+      "Bash(timeout /t 3:*)",
+      "Bash(npx cap init:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx cap add:*)"
     ]
   }
 }

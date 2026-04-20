@@ -8,5 +8,6 @@ const pwaConfig = withPWA({
 });
 
 export default pwaConfig({
+  output: 'export',
   turbopack: {},
 });

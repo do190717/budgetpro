@@ -20,6 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl" style={{ overflowX: 'hidden' }}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#1E3A5F" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className="min-h-screen bg-gray-50 font-sans antialiased" style={{ overflowX: 'hidden', width: '100%' }}>
         {children}
       </body>
