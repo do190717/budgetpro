@@ -8,9 +8,10 @@ export default function AuthScreen() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
   const handleSend = async () => {
-    if (!email.trim()) return;
+    if (!email.trim() || !agreedToPrivacy) return;
     setLoading(true);
     setError('');
     const { error } = await supabase.auth.signInWithOtp({
@@ -26,8 +27,8 @@ export default function AuthScreen() {
     <div style={{ maxWidth: '480px', margin: '0 auto', minHeight: '100vh', background: '#F3F4F6', direction: 'rtl', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 16px' }}>
 
       <div style={{ background: '#1E3A5F', borderRadius: '16px', padding: '32px 24px', marginBottom: '24px', textAlign: 'center' }}>
-        <div style={{ color: '#fff', fontSize: '24px', fontWeight: '500', marginBottom: '6px' }}>ניהול פרויקטים</div>
-        <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>ד.א. עבודות פלדה</div>
+        <div style={{ color: '#fff', fontSize: '24px', fontWeight: '500', marginBottom: '6px' }}>BudgetPro</div>
+        <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>ניהול תקציב פרויקטים</div>
       </div>
 
       {!sent ? (
@@ -48,12 +49,34 @@ export default function AuthScreen() {
             />
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '16px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+            <input
+              type="checkbox"
+              id="privacy"
+              checked={agreedToPrivacy}
+              onChange={e => setAgreedToPrivacy(e.target.checked)}
+              style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#2563EB', cursor: 'pointer', flexShrink: 0 }}
+            />
+            <label htmlFor="privacy" style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.5', cursor: 'pointer' }}>
+              קראתי ואני מסכים/ה ל
+              <a href="/privacy-policy" target="_blank" style={{ color: '#2563EB', textDecoration: 'none', marginRight: '3px' }}>
+                מדיניות הפרטיות
+              </a>
+            </label>
+          </div>
+
           {error && <div style={{ fontSize: '12px', color: '#DC2626', marginBottom: '10px' }}>{error}</div>}
 
           <button
             onClick={handleSend}
-            disabled={loading || !email.trim()}
-            style={{ width: '100%', background: loading ? '#93C5FD' : '#2563EB', color: '#fff', border: 'none', borderRadius: '8px', padding: '12px', fontSize: '15px', fontWeight: '500', cursor: loading ? 'default' : 'pointer' }}
+            disabled={loading || !email.trim() || !agreedToPrivacy}
+            style={{
+              width: '100%',
+              background: loading || !agreedToPrivacy ? '#93C5FD' : '#2563EB',
+              color: '#fff', border: 'none', borderRadius: '8px', padding: '12px',
+              fontSize: '15px', fontWeight: '500',
+              cursor: loading || !agreedToPrivacy ? 'default' : 'pointer',
+            }}
           >
             {loading ? 'שולח...' : 'שלח קישור כניסה'}
           </button>
