@@ -256,33 +256,45 @@ export default function GeneralTab({ state, onStateChange }: Props) {
         <div style={{ border: '1px solid #E5E7EB', overflow: 'hidden' }}>
 
           {/* כותרת + ניווט בשורה אחת */}
-          <div style={{ background: cfg.headerBg, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+          <div style={{ background: cfg.headerBg, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             {/* שם */}
-            <div style={{ flexShrink: 0 }}>
-              <span style={{ color: '#fff', fontWeight: '500', fontSize: '13px' }}>{cfg.label}</span>
-            </div>
+            <span style={{ color: '#fff', fontWeight: '500', fontSize: '13px', flexShrink: 0 }}>{cfg.label}</span>
 
-            {/* ניווט שנה/חודש — באמצע */}
+            {/* ניווט חודש/שנה */}
             {allItems.length > 0 && (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', overflow: 'hidden' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                {/* חץ חודש קודם */}
                 <button onClick={() => navigateMonth(field, -1, allYears)} disabled={!canGoBack}
-                  style={{ background: 'none', border: 'none', color: canGoBack ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: '16px', cursor: canGoBack ? 'pointer' : 'default', padding: '0 2px', flexShrink: 0 }}>‹</button>
+                  style={{ background: 'none', border: 'none', color: canGoBack ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: '16px', cursor: canGoBack ? 'pointer' : 'default', padding: '0 2px', lineHeight: 1 }}>‹</button>
 
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <button onClick={() => setShowYearPicker(showYearPicker === field ? null : field)}
-                    style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '2px 6px', cursor: 'pointer' }}>
+                {/* חודש נוכחי */}
+                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '2px 8px', fontWeight: '500', minWidth: '40px', textAlign: 'center' }}>
+                  {MONTHS_HE[parseInt(curSelMonth) - 1]}
+                </span>
+
+                {/* חץ חודש הבא */}
+                <button onClick={() => navigateMonth(field, 1, allYears)} disabled={!canGoForward}
+                  style={{ background: 'none', border: 'none', color: canGoForward ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: '16px', cursor: canGoForward ? 'pointer' : 'default', padding: '0 2px', lineHeight: 1 }}>›</button>
+
+                {/* בורר שנה */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowYearPicker(showYearPicker === field ? null : field); }}
+                    style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '2px 6px', cursor: 'pointer' }}>
                     {curSelYear} ▾
                   </button>
                   {showYearPicker === field && (
-                    <div style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100, minWidth: '70px', overflow: 'hidden' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 4px)', left: '50%', transform: 'translateX(-50%)', background: '#fff', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 999, minWidth: '80px', overflow: 'hidden' }}>
                       {allYears.map(y => (
                         <button key={y} onClick={() => {
                           setSelectedYear(prev => ({ ...prev, [field]: y }));
                           const months = Array.from(byYearMonth.get(y)?.keys() || []).sort((a, b) => b.localeCompare(a));
-                          if (!months.includes(curSelMonth)) setSelectedMonth(prev => ({ ...prev, [field]: months[0] || curMonth }));
+                          if (!months.includes(curSelMonth)) {
+                            setSelectedMonth(prev => ({ ...prev, [field]: months[0] || curMonth }));
+                          }
                           setShowYearPicker(null);
                         }}
-                          style={{ display: 'block', width: '100%', padding: '7px 12px', border: 'none', background: y === curSelYear ? '#EFF6FF' : '#fff', color: '#1F2937', fontSize: '13px', cursor: 'pointer', textAlign: 'right' }}>
+                          style={{ display: 'block', width: '100%', padding: '8px 14px', border: 'none', background: y === curSelYear ? '#EFF6FF' : '#fff', color: y === curSelYear ? '#2563EB' : '#1F2937', fontSize: '13px', fontWeight: y === curSelYear ? '600' : '400', cursor: 'pointer', textAlign: 'center' }}>
                           {y}
                         </button>
                       ))}
@@ -290,17 +302,7 @@ export default function GeneralTab({ state, onStateChange }: Props) {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '3px', flexWrap: 'nowrap', overflow: 'hidden' }}>
-                  {monthsInYear.map(m => (
-                    <button key={m} onClick={() => setSelectedMonth(prev => ({ ...prev, [field]: m }))}
-                      style={{ background: m === curSelMonth ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '10px', padding: '2px 5px', cursor: 'pointer', fontWeight: m === curSelMonth ? '600' : '400', flexShrink: 0 }}>
-                      {MONTHS_HE[parseInt(m) - 1].slice(0, 3)}
-                    </button>
-                  ))}
-                </div>
-
-                <button onClick={() => navigateMonth(field, 1, allYears)} disabled={!canGoForward}
-                  style={{ background: 'none', border: 'none', color: canGoForward ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: '16px', cursor: canGoForward ? 'pointer' : 'default', padding: '0 2px', flexShrink: 0 }}>›</button>
+                {isCurrentPeriod && <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.25)', color: '#fff', padding: '1px 5px', borderRadius: '999px', flexShrink: 0 }}>נוכחי</span>}
               </div>
             )}
             {allItems.length === 0 && <div style={{ flex: 1 }} />}
