@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { AppState, LineItem, RecurringGeneralItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
-import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, calcGeneralHomeBalance, groupByMonth } from '@/lib/calculations';
+import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, calcGeneralHomeBalance } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
 
 const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
-const today = () => new Date().toISOString().split('T')[0];
-const currentMonthKey = () => new Date().toISOString().slice(0, 7);
+const todayStr = () => new Date().toISOString().split('T')[0];
+const fmtShortDate = (d: string) => {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y.slice(2)}`;
+};
+
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 const inputStyle: React.CSSProperties = {
   width: '100%', border: 'none', background: 'transparent', outline: 'none',
@@ -25,47 +31,58 @@ type AddMode = null | `choose-${TableType}` | `single-${TableType}` | `recurring
 
 const TABLE_CONFIG = {
   generalIncome: {
-    label: 'הכנסות',
-    sub: 'כולן נכנסות לחישוב המעשר',
-    headerBg: '#1D9E75',
-    summaryBg: '#EAF3DE',
-    summaryColor: '#27500A',
-    zebraColor: '#F8FFF8',
-    recurringType: 'income' as RecurringGeneralItem['type'],
+    label: 'הכנסות', sub: 'כולן נכנסות לחישוב המעשר',
+    headerBg: '#1D9E75', summaryBg: '#EAF3DE', summaryColor: '#27500A',
+    zebraColor: '#F8FFF8', recurringType: 'income' as RecurringGeneralItem['type'],
   },
   generalExpenseWork: {
-    label: 'הוצאות עסקיות',
-    sub: 'מתקזזות מהרווח ומפחיתות את המעשר',
-    headerBg: '#D85A30',
-    summaryBg: '#FAECE7',
-    summaryColor: '#712B13',
-    zebraColor: '#FFF8F8',
-    recurringType: 'expenseWork' as RecurringGeneralItem['type'],
+    label: 'הוצאות עסקיות', sub: 'מתקזזות מהרווח ומפחיתות את המעשר',
+    headerBg: '#D85A30', summaryBg: '#FAECE7', summaryColor: '#712B13',
+    zebraColor: '#FFF8F8', recurringType: 'expenseWork' as RecurringGeneralItem['type'],
   },
   generalExpenseHome: {
-    label: 'הוצאות ביתיות',
-    sub: 'לא מתקזזות מהמעשר',
-    headerBg: '#7C3AED',
-    summaryBg: '#EDE9FE',
-    summaryColor: '#4C1D95',
-    zebraColor: '#FAF8FF',
-    recurringType: 'expenseHome' as RecurringGeneralItem['type'],
+    label: 'הוצאות ביתיות', sub: 'לא מתקזזות מהמעשר',
+    headerBg: '#7C3AED', summaryBg: '#EDE9FE', summaryColor: '#4C1D95',
+    zebraColor: '#FAF8FF', recurringType: 'expenseHome' as RecurringGeneralItem['type'],
   },
 };
 
+function groupByYearMonth(items: LineItem[]): Map<string, Map<string, LineItem[]>> {
+  const byYear = new Map<string, Map<string, LineItem[]>>();
+  for (const item of items) {
+    if (!item.date) continue;
+    const [year, month] = item.date.split('-');
+    if (!byYear.has(year)) byYear.set(year, new Map());
+    const byMonth = byYear.get(year)!;
+    if (!byMonth.has(month)) byMonth.set(month, []);
+    byMonth.get(month)!.push(item);
+  }
+  return byYear;
+}
+
+function getCurrentYearMonth() {
+  const now = new Date();
+  return { year: String(now.getFullYear()), month: String(now.getMonth() + 1).padStart(2, '0') };
+}
+
 export default function GeneralTab({ state, onStateChange }: Props) {
+  const { year: curYear, month: curMonth } = getCurrentYearMonth();
+
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [isRecurringOpen, setIsRecurringOpen] = useState(false);
-  const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
-  const [openMonths, setOpenMonths] = useState<Set<string>>(new Set([currentMonthKey()]));
   const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; onConfirm: () => void }>({ open: false, title: '', onConfirm: () => {} });
+
+  // ניווט שנה/חודש per-table
+  const [selectedYear, setSelectedYear] = useState<Record<TableType, string>>({ generalIncome: curYear, generalExpenseWork: curYear, generalExpenseHome: curYear });
+  const [selectedMonth, setSelectedMonth] = useState<Record<TableType, string>>({ generalIncome: curMonth, generalExpenseWork: curMonth, generalExpenseHome: curMonth });
+  const [showYearPicker, setShowYearPicker] = useState<TableType | null>(null);
 
   const [singleDesc, setSingleDesc] = useState('');
   const [singleAmount, setSingleAmount] = useState('');
-  const [singleDate, setSingleDate] = useState(today());
+  const [singleDate, setSingleDate] = useState(todayStr());
   const [recurringDesc, setRecurringDesc] = useState('');
   const [recurringAmount, setRecurringAmount] = useState('');
   const [recurringDay, setRecurringDay] = useState('1');
@@ -80,10 +97,6 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   const totalExpenseHome = calcGeneralExpense(generalExpenseHome);
   const businessProfit = calcGeneralBusinessProfit(state);
   const homeBalance = calcGeneralHomeBalance(state);
-
-  const toggleMonth = (key: string) => {
-    setOpenMonths(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
-  };
 
   const toggleExpand = (id: string) => {
     setExpandedRows(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
@@ -102,11 +115,11 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     if (!singleDesc.trim() || !singleAmount || !singleDate) return;
     const newItem: LineItem = { id: generateId(), desc: singleDesc.trim(), amount: parseFloat(singleAmount), note: '', date: singleDate };
     onStateChange({ ...state, [field]: [...((state[field] as LineItem[]) || []), newItem] });
-    setSingleDesc(''); setSingleAmount(''); setSingleDate(today());
+    const [y, m] = singleDate.split('-');
+    setSelectedYear(prev => ({ ...prev, [field]: y }));
+    setSelectedMonth(prev => ({ ...prev, [field]: m }));
+    setSingleDesc(''); setSingleAmount(''); setSingleDate(todayStr());
     setAddMode(null);
-    // פתיחת החודש הנוכחי
-    const monthKey = singleDate.slice(0, 7);
-    setOpenMonths(prev => new Set([...prev, monthKey]));
   };
 
   const handleAddRecurring = (type: RecurringGeneralItem['type']) => {
@@ -115,8 +128,7 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     const rg: RecurringGeneralItem = { id: generateId(), type, desc: recurringDesc.trim(), amount: parseFloat(recurringAmount), dayOfMonth: day, lastRegistered: '', enabled: true };
     onStateChange({ ...state, recurringGeneralItems: [...recurringItems, rg] });
     setRecurringDesc(''); setRecurringAmount(''); setRecurringDay('1');
-    setAddMode(null);
-    setIsRecurringOpen(true);
+    setAddMode(null); setIsRecurringOpen(true);
   };
 
   const handleToggleRecurring = (id: string) => {
@@ -127,19 +139,28 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     setConfirmState({ open: true, title: 'למחוק את הפריט הקבוע?', onConfirm: () => onStateChange({ ...state, recurringGeneralItems: recurringItems.filter(r => r.id !== id) }) });
   };
 
+  const navigateMonth = (field: TableType, dir: 1 | -1, allYears: string[]) => {
+    let y = parseInt(selectedYear[field]);
+    let m = parseInt(selectedMonth[field]) + dir;
+    if (m > 12) { m = 1; y++; }
+    if (m < 1) { m = 12; y--; }
+    const ys = String(y);
+    if (!allYears.includes(ys)) return;
+    setSelectedYear(prev => ({ ...prev, [field]: ys }));
+    setSelectedMonth(prev => ({ ...prev, [field]: String(m).padStart(2, '0') }));
+  };
+
   const choosePanel = (field: TableType) => {
     const cfg = TABLE_CONFIG[field];
     return (
       <div style={{ padding: '14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
         <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '10px', textAlign: 'right' }}>סוג רשומה:</div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setAddMode(`single-${field}` as AddMode)}
-            style={{ flex: 1, background: '#fff', border: `2px solid ${cfg.headerBg}`, borderRadius: '10px', padding: '10px 6px', cursor: 'pointer', textAlign: 'center' }}>
+          <button onClick={() => setAddMode(`single-${field}` as AddMode)} style={{ flex: 1, background: '#fff', border: `2px solid ${cfg.headerBg}`, borderRadius: '10px', padding: '10px 6px', cursor: 'pointer', textAlign: 'center' }}>
             <div style={{ fontSize: '18px', marginBottom: '3px' }}>💸</div>
             <div style={{ fontWeight: '500', color: cfg.headerBg, fontSize: '12px' }}>חד פעמית</div>
           </button>
-          <button onClick={() => setAddMode(`recurring-${field}` as AddMode)}
-            style={{ flex: 1, background: '#fff', border: '2px solid #2563EB', borderRadius: '10px', padding: '10px 6px', cursor: 'pointer', textAlign: 'center' }}>
+          <button onClick={() => setAddMode(`recurring-${field}` as AddMode)} style={{ flex: 1, background: '#fff', border: '2px solid #2563EB', borderRadius: '10px', padding: '10px 6px', cursor: 'pointer', textAlign: 'center' }}>
             <div style={{ fontSize: '18px', marginBottom: '3px' }}>🔁</div>
             <div style={{ fontWeight: '500', color: '#2563EB', fontSize: '12px' }}>קבועה חוזרת</div>
           </button>
@@ -153,15 +174,14 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     const cfg = TABLE_CONFIG[field];
     return (
       <div style={{ padding: '14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-        <div style={{ fontSize: '13px', fontWeight: '500', color: cfg.headerBg, marginBottom: '10px', textAlign: 'right' }}>{cfg.label} — רשומה חד פעמית</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
           <div>
             <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', textAlign: 'right' }}>תאריך</label>
-            <input type="date" value={singleDate} onChange={e => setSingleDate(e.target.value)} required style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none' }} />
+            <input type="date" value={singleDate} onChange={e => setSingleDate(e.target.value)} required style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', textAlign: 'right' }}>סכום ₪</label>
-            <input type="number" value={singleAmount} onChange={e => setSingleAmount(e.target.value)} placeholder="0" autoFocus style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none' }} />
+            <input type="number" value={singleAmount} onChange={e => setSingleAmount(e.target.value)} placeholder="0" autoFocus style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
           </div>
         </div>
         <div style={{ marginBottom: '10px' }}>
@@ -184,11 +204,11 @@ export default function GeneralTab({ state, onStateChange }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
           <div>
             <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', textAlign: 'right' }}>סכום ₪</label>
-            <input type="number" value={recurringAmount} onChange={e => setRecurringAmount(e.target.value)} placeholder="0" autoFocus style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none' }} />
+            <input type="number" value={recurringAmount} onChange={e => setRecurringAmount(e.target.value)} placeholder="0" autoFocus style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', textAlign: 'right' }}>יום בחודש (1-28)</label>
-            <input type="number" value={recurringDay} onChange={e => setRecurringDay(e.target.value)} min="1" max="28" style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none' }} />
+            <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', textAlign: 'right' }}>יום (1-28)</label>
+            <input type="number" value={recurringDay} onChange={e => setRecurringDay(e.target.value)} min="1" max="28" style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
           </div>
         </div>
         <div style={{ marginBottom: '10px' }}>
@@ -203,113 +223,100 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     );
   };
 
-  const renderMonthGroup = (group: { key: string; label: string; items: LineItem[] }, field: TableType, zebraColor: string) => {
-    const isCurrentMonth = group.key === currentMonthKey();
-    const isOpen = openMonths.has(group.key);
-    const groupTotal = group.items.reduce((s, i) => s + i.amount, 0);
-
-    return (
-      <div key={group.key}>
-        <button
-          onClick={() => toggleMonth(group.key)}
-          style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: isCurrentMonth ? '#F0F9FF' : '#FAFAFA', border: 'none', borderBottom: '1px solid #E5E7EB', cursor: 'pointer', direction: 'rtl' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#9CA3AF', fontSize: '12px' }}>▶</span>
-            <span style={{ fontSize: '13px', fontWeight: isCurrentMonth ? '600' : '400', color: isCurrentMonth ? '#1E3A5F' : '#6B7280' }}>{group.label}</span>
-            {isCurrentMonth && <span style={{ fontSize: '10px', background: '#DBEAFE', color: '#1D4ED8', padding: '1px 6px', borderRadius: '999px' }}>נוכחי</span>}
-          </div>
-          <span style={{ fontSize: '13px', color: '#6B7280' }}>{fmt(groupTotal)}</span>
-        </button>
-
-        {isOpen && group.items.map((item, index) => {
-          const isExpanded = expandedRows.has(item.id);
-          const hasNote = !!item.note;
-          let pressTimer: ReturnType<typeof setTimeout> | null = null;
-          const handlePressStart = () => {
-            pressTimer = setTimeout(() => {
-              setConfirmState({ open: true, title: `למחוק "${item.desc || 'שורה'}"?`, onConfirm: () => deleteRow(field, item.id) });
-            }, 600);
-          };
-          const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
-
-          return (
-            <div key={item.id}>
-              <div
-                style={{ display: 'flex', backgroundColor: focusedRowId === item.id ? '#EEF4FF' : index % 2 === 0 ? '#FFFFFF' : zebraColor, userSelect: 'none' }}
-                onFocus={() => setFocusedRowId(item.id)}
-                onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocusedRowId(null); }}
-                onMouseEnter={() => setHoveredRowId(item.id)}
-                onMouseLeave={() => { setHoveredRowId(null); handlePressEnd(); }}
-                onMouseDown={handlePressStart} onMouseUp={handlePressEnd}
-                onTouchStart={handlePressStart} onTouchEnd={handlePressEnd}
-              >
-                {/* תאריך */}
-                <div style={{ width: '18%', textAlign: 'center', verticalAlign: 'middle', flexShrink: 0 }}>
-                  <input type="date" value={item.date || ''} onChange={e => updateItem(field, item.id, 'date', e.target.value)}
-                    onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}
-                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', color: item.date ? '#374151' : '#9CA3AF', direction: 'ltr', width: '100%', cursor: 'pointer', padding: '4px 2px' }} />
-                </div>
-                {/* תיאור */}
-                <div style={{ flex: 1 }}>
-                  <input type="text" value={item.desc} onChange={e => updateItem(field, item.id, 'desc', e.target.value)} placeholder="תיאור..."
-                    style={inputStyle} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()} />
-                </div>
-                {/* סכום */}
-                <div style={{ width: '22%', flexShrink: 0 }}>
-                  <input type="number" value={item.amount || ''} onChange={e => updateItem(field, item.id, 'amount', parseFloat(e.target.value) || 0)} placeholder="0"
-                    style={{ ...inputStyle, direction: 'ltr', textAlign: 'right' }} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()} />
-                </div>
-                {/* הערה */}
-                <div style={{ width: '10%', textAlign: 'center', flexShrink: 0 }}>
-                  <button onClick={() => toggleExpand(item.id)} onMouseDown={e => e.stopPropagation()}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: hasNote ? '#2563EB' : '#9CA3AF', padding: '8px' }}>
-                    {isExpanded ? '▲' : '▼'}
-                  </button>
-                </div>
-                {/* מחיקה */}
-                <div style={{ width: '8%', textAlign: 'center', flexShrink: 0 }}>
-                  {hoveredRowId === item.id && (
-                    <button onClick={() => setConfirmState({ open: true, title: `למחוק "${item.desc || 'שורה'}"?`, onConfirm: () => deleteRow(field, item.id) })}
-                      onMouseDown={e => e.stopPropagation()}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '6px', fontSize: '14px' }}>✕</button>
-                  )}
-                </div>
-              </div>
-              {isExpanded && (
-                <div style={{ backgroundColor: '#F1EFE8' }}>
-                  <input type="text" value={item.note} onChange={e => updateItem(field, item.id, 'note', e.target.value)} placeholder="הערה חופשית..."
-                    style={{ ...inputStyle, padding: '10px 14px', fontSize: '13px', color: '#555' }} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   const renderTable = (field: TableType) => {
     const cfg = TABLE_CONFIG[field];
-    const items = (state[field] as LineItem[]) || [];
-    const total = items.reduce((s, i) => s + i.amount, 0);
-    const grouped = groupByMonth(items);
+    const allItems = (state[field] as LineItem[]) || [];
+    const total = allItems.reduce((s, i) => s + i.amount, 0);
+    const byYearMonth = groupByYearMonth(allItems);
+    const allYears = Array.from(byYearMonth.keys()).sort((a, b) => b.localeCompare(a));
+    const curSelYear = selectedYear[field];
+    const curSelMonth = selectedMonth[field];
+    const monthsInYear = byYearMonth.get(curSelYear) ? Array.from(byYearMonth.get(curSelYear)!.keys()).sort((a, b) => b.localeCompare(a)) : [];
+    const items = byYearMonth.get(curSelYear)?.get(curSelMonth) || [];
+    const monthTotal = items.reduce((s, i) => s + i.amount, 0);
+    const isCurrentPeriod = curSelYear === curYear && curSelMonth === curMonth;
     const chooseMode = `choose-${field}` as AddMode;
     const singleMode = `single-${field}` as AddMode;
     const recurringMode = `recurring-${field}` as AddMode;
-    const isSorted = sortedTypes.has(field);
+
+    // חישוב שניתן לנווט קדימה/אחורה
+    const canGoBack = (() => {
+      let m = parseInt(curSelMonth) - 1; let y = parseInt(curSelYear);
+      if (m < 1) { m = 12; y--; }
+      return allYears.includes(String(y)) && (byYearMonth.get(String(y))?.has(String(m).padStart(2, '0')) ?? false);
+    })();
+    const canGoForward = (() => {
+      let m = parseInt(curSelMonth) + 1; let y = parseInt(curSelYear);
+      if (m > 12) { m = 1; y++; }
+      return allYears.includes(String(y)) && (byYearMonth.get(String(y))?.has(String(m).padStart(2, '0')) ?? false);
+    })();
 
     return (
       <section style={{ marginBottom: '12px' }}>
-        <div style={{ borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', overflow: 'hidden' }}>
-          {/* כותרת */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: cfg.headerBg, padding: '10px 12px' }}>
-            <div>
-              <span style={{ color: '#fff', fontWeight: '500', fontSize: '14px' }}>{cfg.label}</span>
-              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '10px', marginTop: '1px' }}>{cfg.sub}</div>
+        <div style={{ border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+
+          {/* כותרת עם ניווט */}
+          <div style={{ background: cfg.headerBg, padding: '0' }}>
+            {/* שורה 1: שם + כפתור הוסף */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px 4px' }}>
+              <div>
+                <span style={{ color: '#fff', fontWeight: '500', fontSize: '14px' }}>{cfg.label}</span>
+                <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '10px' }}>{cfg.sub}</div>
+              </div>
+              {!addMode && (
+                <button onClick={() => setAddMode(chooseMode)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>+ הוסף</button>
+              )}
             </div>
-            {!addMode && (
-              <button onClick={() => setAddMode(chooseMode)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}>+ הוסף</button>
+
+            {/* שורה 2: ניווט שנה/חודש */}
+            {allItems.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 8px', direction: 'rtl' }}>
+                {/* חץ קדימה */}
+                <button onClick={() => navigateMonth(field, 1, allYears)} disabled={!canGoForward}
+                  style={{ background: 'none', border: 'none', color: canGoForward ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: '16px', cursor: canGoForward ? 'pointer' : 'default', padding: '0 4px' }}>›</button>
+
+                {/* שנה + חודש */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {/* בחירת שנה */}
+                  <div style={{ position: 'relative' }}>
+                    <button onClick={() => setShowYearPicker(showYearPicker === field ? null : field)}
+                      style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '3px 8px', cursor: 'pointer' }}>
+                      {curSelYear} ▾
+                    </button>
+                    {showYearPicker === field && (
+                      <div style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100, minWidth: '80px', overflow: 'hidden' }}>
+                        {allYears.map(y => (
+                          <button key={y} onClick={() => {
+                            setSelectedYear(prev => ({ ...prev, [field]: y }));
+                            const months = Array.from(byYearMonth.get(y)?.keys() || []).sort((a, b) => b.localeCompare(a));
+                            if (!months.includes(curSelMonth)) setSelectedMonth(prev => ({ ...prev, [field]: months[0] || curMonth }));
+                            setShowYearPicker(null);
+                          }}
+                            style={{ display: 'block', width: '100%', padding: '8px 14px', border: 'none', background: y === curSelYear ? '#EFF6FF' : '#fff', color: '#1F2937', fontSize: '13px', cursor: 'pointer', textAlign: 'right' }}>
+                            {y}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* בחירת חודש */}
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {monthsInYear.map(m => (
+                      <button key={m} onClick={() => setSelectedMonth(prev => ({ ...prev, [field]: m }))}
+                        style={{ background: m === curSelMonth ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '2px 6px', cursor: 'pointer', fontWeight: m === curSelMonth ? '600' : '400' }}>
+                        {MONTHS_HE[parseInt(m) - 1]}
+                      </button>
+                    ))}
+                  </div>
+
+                  {isCurrentPeriod && <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.25)', color: '#fff', padding: '1px 6px', borderRadius: '999px' }}>נוכחי</span>}
+                </div>
+
+                {/* חץ אחורה */}
+                <button onClick={() => navigateMonth(field, -1, allYears)} disabled={!canGoBack}
+                  style={{ background: 'none', border: 'none', color: canGoBack ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: '16px', cursor: canGoBack ? 'pointer' : 'default', padding: '0 4px' }}>‹</button>
+              </div>
             )}
           </div>
 
@@ -318,22 +325,90 @@ export default function GeneralTab({ state, onStateChange }: Props) {
           {addMode === recurringMode && recurringForm(field)}
 
           {/* כותרות עמודות */}
-          <div style={{ display: 'flex', background: '#F9FAFB', fontSize: '12px', color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>
-            <div style={{ width: '18%', padding: '7px 4px', textAlign: 'center' }}>תאריך</div>
-            <div style={{ flex: 1, padding: '7px 8px', textAlign: 'right' }}>תיאור</div>
-            <div style={{ width: '22%', padding: '7px 8px', textAlign: 'right' }}>סכום ₪</div>
-            <div style={{ width: '10%', padding: '7px', textAlign: 'center' }}>הערה</div>
-            <div style={{ width: '8%' }}></div>
+          <div style={{ display: 'flex', background: '#F9FAFB', fontSize: '11px', color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>
+            <div style={{ width: '16%', padding: '6px 4px', textAlign: 'center', flexShrink: 0 }}>תאריך</div>
+            <div style={{ flex: 1, padding: '6px 8px', textAlign: 'right' }}>תיאור</div>
+            <div style={{ width: '22%', padding: '6px 8px', textAlign: 'right', flexShrink: 0 }}>סכום ₪</div>
+            <div style={{ width: '9%', padding: '6px', textAlign: 'center', flexShrink: 0 }}>הע׳</div>
+            <div style={{ width: '8%', flexShrink: 0 }}></div>
           </div>
 
-          {/* שורות לפי חודש */}
-          {grouped.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#9CA3AF', padding: '20px' }}>אין {cfg.label} עדיין</div>
-          ) : (
-            grouped.map(group => renderMonthGroup(group, field, cfg.zebraColor))
-          )}
+          {/* שורות */}
+          {allItems.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#9CA3AF', padding: '20px', fontSize: '13px' }}>אין {cfg.label} עדיין</div>
+          ) : items.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#9CA3AF', padding: '20px', fontSize: '13px' }}>
+              אין {cfg.label} ב{MONTHS_HE[parseInt(curSelMonth) - 1]} {curSelYear}
+            </div>
+          ) : items.map((item, index) => {
+            const isExpanded = expandedRows.has(item.id);
+            const hasNote = !!item.note;
+            let pressTimer: ReturnType<typeof setTimeout> | null = null;
+            const handlePressStart = () => {
+              pressTimer = setTimeout(() => setConfirmState({ open: true, title: `למחוק "${item.desc || 'שורה'}"?`, onConfirm: () => deleteRow(field, item.id) }), 600);
+            };
+            const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
 
-          {/* סיכום */}
+            return (
+              <div key={item.id}>
+                <div style={{ display: 'flex', backgroundColor: focusedRowId === item.id ? '#EEF4FF' : index % 2 === 0 ? '#fff' : cfg.zebraColor, userSelect: 'none', width: '100%' }}
+                  onFocus={() => setFocusedRowId(item.id)}
+                  onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocusedRowId(null); }}
+                  onMouseEnter={() => setHoveredRowId(item.id)}
+                  onMouseLeave={() => { setHoveredRowId(null); handlePressEnd(); }}
+                  onMouseDown={handlePressStart} onMouseUp={handlePressEnd}
+                  onTouchStart={handlePressStart} onTouchEnd={handlePressEnd}
+                >
+                  {/* תאריך קומפקטי */}
+                  <div style={{ width: '16%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <input type="date" value={item.date || ''} onChange={e => updateItem(field, item.id, 'date', e.target.value)}
+                      onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}
+                      title={fmtShortDate(item.date)}
+                      style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '10px', color: '#374151', direction: 'ltr', width: '100%', cursor: 'pointer', padding: '4px 2px', textAlign: 'center' }} />
+                  </div>
+                  {/* תיאור */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input type="text" value={item.desc} onChange={e => updateItem(field, item.id, 'desc', e.target.value)} placeholder="תיאור..."
+                      style={inputStyle} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()} />
+                  </div>
+                  {/* סכום */}
+                  <div style={{ width: '22%', flexShrink: 0 }}>
+                    <input type="number" value={item.amount || ''} onChange={e => updateItem(field, item.id, 'amount', parseFloat(e.target.value) || 0)} placeholder="0"
+                      style={{ ...inputStyle, direction: 'ltr', textAlign: 'right', fontSize: '13px' }} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()} />
+                  </div>
+                  {/* הערה */}
+                  <div style={{ width: '9%', flexShrink: 0, textAlign: 'center' }}>
+                    <button onClick={() => toggleExpand(item.id)} onMouseDown={e => e.stopPropagation()}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: hasNote ? '#2563EB' : '#9CA3AF', padding: '8px 4px' }}>
+                      {isExpanded ? '▲' : '▼'}
+                    </button>
+                  </div>
+                  {/* מחיקה */}
+                  <div style={{ width: '8%', flexShrink: 0, textAlign: 'center' }}>
+                    {hoveredRowId === item.id && (
+                      <button onClick={() => setConfirmState({ open: true, title: `למחוק "${item.desc || 'שורה'}"?`, onConfirm: () => deleteRow(field, item.id) })}
+                        onMouseDown={e => e.stopPropagation()}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '6px 4px', fontSize: '13px' }}>✕</button>
+                    )}
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div style={{ backgroundColor: '#F1EFE8' }}>
+                    <input type="text" value={item.note} onChange={e => updateItem(field, item.id, 'note', e.target.value)} placeholder="הערה חופשית..."
+                      style={{ ...inputStyle, padding: '10px 14px', fontSize: '13px', color: '#555' }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* סיכום חודש + סה"כ */}
+          {allItems.length > 0 && items.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', background: 'rgba(0,0,0,0.04)', fontSize: '12px', color: '#6B7280', borderTop: '1px solid #E5E7EB' }}>
+              <span>{MONTHS_HE[parseInt(curSelMonth) - 1]}</span>
+              <span>{fmt(monthTotal)}</span>
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '10px 14px', backgroundColor: cfg.summaryBg, color: cfg.summaryColor, fontWeight: 'bold' }}>
             <span style={{ textAlign: 'right' }}>סה״כ {cfg.label}</span>
             <span style={{ textAlign: 'left' }}>{fmt(total)}</span>
@@ -344,13 +419,7 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   };
 
   return (
-    <div>
-      <style>{`
-        @media (max-width: 400px) {
-          .date-col { width: 32px !important; }
-        }
-      `}</style>
-
+    <div style={{ direction: 'rtl' }}>
       {renderTable('generalIncome')}
       {renderTable('generalExpenseWork')}
       {renderTable('generalExpenseHome')}
@@ -359,14 +428,15 @@ export default function GeneralTab({ state, onStateChange }: Props) {
       <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', border: '1px solid #E5E7EB' }}>
         <div style={{ background: '#1E3A5F', padding: '10px 14px', fontSize: '13px', fontWeight: '500', color: '#fff' }}>סיכום</div>
         <div style={{ background: '#fff' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '10px 14px', borderBottom: '1px solid #F3F4F6' }}>
-            <span style={{ fontSize: '13px', color: '#374151' }}>הכנסות</span>
-            <span style={{ fontSize: '13px', textAlign: 'left', color: '#059669', fontWeight: '500' }}>{fmt(totalIncome)}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '10px 14px', borderBottom: '1px solid #F3F4F6' }}>
-            <span style={{ fontSize: '13px', color: '#374151' }}>הוצאות עסקיות</span>
-            <span style={{ fontSize: '13px', textAlign: 'left', color: '#DC2626', fontWeight: '500' }}>− {fmt(totalExpenseWork)}</span>
-          </div>
+          {[
+            { label: 'הכנסות', value: totalIncome, color: '#059669', border: true },
+            { label: 'הוצאות עסקיות', value: `− ${fmt(totalExpenseWork)}`, color: '#DC2626', border: true, raw: true },
+          ].map(({ label, value, color, border, raw }) => (
+            <div key={label} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '10px 14px', borderBottom: border ? '1px solid #F3F4F6' : 'none' }}>
+              <span style={{ fontSize: '13px', color: '#374151' }}>{label}</span>
+              <span style={{ fontSize: '13px', textAlign: 'left', color, fontWeight: '500' }}>{raw ? value : fmt(value as number)}</span>
+            </div>
+          ))}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '11px 14px', borderBottom: '2px solid #E5E7EB', background: businessProfit >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
             <div>
               <span style={{ fontSize: '14px', fontWeight: '600', color: businessProfit >= 0 ? '#065F46' : '#991B1B' }}>רווח עסקי</span>
