@@ -32,16 +32,29 @@ export function calcGeneralExpense(items: LineItem[]): number {
   return (items || []).reduce((sum, item) => sum + item.amount, 0);
 }
 
+// רווח עסקי כללי = הכנסות - הוצאות עסקיות (נכנס לבסיס מעשר)
+export function calcGeneralBusinessProfit(state: AppState): number {
+  return calcGeneralIncome(state.generalIncome || []) - calcGeneralExpense(state.generalExpenseWork || []);
+}
+
+// יתרה לבית = רווח עסקי - הוצאות ביתיות
+export function calcGeneralHomeBalance(state: AppState): number {
+  return calcGeneralBusinessProfit(state) - calcGeneralExpense(state.generalExpenseHome || []);
+}
+
+// בסיס מעשר = רווח פרויקטים + רווח עסקי כללי (הכנסות - הוצאות עסקיות)
+export function calcGrandTotalProfit(state: AppState): number {
+  return calcTotalProfit(state.projects) + calcGeneralBusinessProfit(state);
+}
+
+// לKPI בheader — הכנסות כולל כל ההכנסות
 export function calcGrandTotalIncome(state: AppState): number {
   return calcTotalIncome(state.projects) + calcGeneralIncome(state.generalIncome || []);
 }
 
+// לKPI בheader — הוצאות כולל כל ההוצאות
 export function calcGrandTotalExpense(state: AppState): number {
-  return calcTotalExpense(state.projects) + calcGeneralExpense(state.generalExpense || []);
-}
-
-export function calcGrandTotalProfit(state: AppState): number {
-  return calcGrandTotalIncome(state) - calcGrandTotalExpense(state);
+  return calcTotalExpense(state.projects) + calcGeneralExpense(state.generalExpenseWork || []) + calcGeneralExpense(state.generalExpenseHome || []);
 }
 
 export function calcDeductionAmount(profit: number, deduction: Deduction): number {
@@ -87,4 +100,23 @@ export function formatCurrency(amount: number): string {
 export function formatDate(date: string): string {
   if (!date) return '';
   return new Date(date).toLocaleDateString('he-IL');
+}
+
+// קיבוץ שורות לפי חודש
+export function groupByMonth(items: LineItem[]): { key: string; label: string; items: LineItem[] }[] {
+  const map = new Map<string, LineItem[]>();
+  for (const item of items) {
+    if (!item.date) continue;
+    const [year, month] = item.date.split('-');
+    const key = `${year}-${month}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(item);
+  }
+  const months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  return Array.from(map.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, items]) => {
+      const [year, month] = key.split('-');
+      return { key, label: `${months[parseInt(month) - 1]} ${year}`, items };
+    });
 }

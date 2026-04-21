@@ -4,6 +4,7 @@ export interface LineItem {
   amount: number;
   note: string;
   date: string;
+  expenseCategory?: 'work' | 'home';
 }
 
 export interface Project {
@@ -40,7 +41,7 @@ export interface RecurringPayment {
 
 export interface RecurringGeneralItem {
   id: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expenseWork' | 'expenseHome';
   desc: string;
   amount: number;
   dayOfMonth: number;
@@ -55,7 +56,8 @@ export interface AppState {
   maasarPayments: MaasarPayment[];
   recurringPayments: RecurringPayment[];
   generalIncome: LineItem[];
-  generalExpense: LineItem[];
+  generalExpenseWork: LineItem[];
+  generalExpenseHome: LineItem[];
   recurringGeneralItems: RecurringGeneralItem[];
   businessName: string;
   businessSubtitle: string;

@@ -92,7 +92,7 @@ function checkRecurringGeneralItems(state: AppState): { state: AppState; notific
     if (months.length === 0) { updatedItems.push(rg); continue; }
 
     const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
-    const typeLabel = rg.type === 'income' ? 'הכנסה' : 'הוצאה';
+    const typeLabel = rg.type === 'income' ? 'הכנסה' : rg.type === 'expenseWork' ? 'הוצאה עסקית' : 'הוצאה ביתית';
     const confirmed = window.confirm(`${typeLabel} קבועה ממתינה:\n"${rg.desc}" — ${fmt(rg.amount)}${months.length > 1 ? `\n(${months.length} חודשים)` : ''}\n\nלאשר ולרשום?`);
     if (!confirmed) { updatedItems.push(rg); continue; }
 
@@ -102,10 +102,11 @@ function checkRecurringGeneralItems(state: AppState): { state: AppState; notific
       return { id: generateId(), desc: rg.desc, amount: rg.amount, note: '', date: dateStr };
     });
 
-    const field = rg.type === 'income' ? 'generalIncome' : 'generalExpense';
-    const updatedList = [...(updatedState[field] || []), ...newItems];
+    const field = rg.type === 'income' ? 'generalIncome' : rg.type === 'expenseWork' ? 'generalExpenseWork' : 'generalExpenseHome';
+    const dbType = rg.type === 'income' ? 'income' : rg.type === 'expenseWork' ? 'expenseWork' : 'expenseHome';
+    const updatedList = [...((updatedState as AppState)[field as keyof AppState] as LineItem[] || []), ...newItems];
     updatedState = { ...updatedState, [field]: updatedList };
-    saveGeneralItemsToDB(updatedList, rg.type);
+    saveGeneralItemsToDB(updatedList, dbType);
 
     const last = months[months.length - 1];
     const updated = { ...rg, lastRegistered: makeDate(last.year, last.month, rg.dayOfMonth) };
@@ -188,9 +189,13 @@ export default function Home() {
       if (saveTimers.current.has('gi')) clearTimeout(saveTimers.current.get('gi')!);
       saveTimers.current.set('gi', setTimeout(() => saveGeneralItemsToDB(newState.generalIncome, 'income'), 800));
     }
-    if (JSON.stringify(state.generalExpense) !== JSON.stringify(newState.generalExpense)) {
-      if (saveTimers.current.has('ge')) clearTimeout(saveTimers.current.get('ge')!);
-      saveTimers.current.set('ge', setTimeout(() => saveGeneralItemsToDB(newState.generalExpense, 'expense'), 800));
+    if (JSON.stringify(state.generalExpenseWork) !== JSON.stringify(newState.generalExpenseWork)) {
+      if (saveTimers.current.has('gew')) clearTimeout(saveTimers.current.get('gew')!);
+      saveTimers.current.set('gew', setTimeout(() => saveGeneralItemsToDB(newState.generalExpenseWork, 'expenseWork'), 800));
+    }
+    if (JSON.stringify(state.generalExpenseHome) !== JSON.stringify(newState.generalExpenseHome)) {
+      if (saveTimers.current.has('geh')) clearTimeout(saveTimers.current.get('geh')!);
+      saveTimers.current.set('geh', setTimeout(() => saveGeneralItemsToDB(newState.generalExpenseHome, 'expenseHome'), 800));
     }
 
     const prevRG = new Map((state.recurringGeneralItems || []).map(r => [r.id, r]));
