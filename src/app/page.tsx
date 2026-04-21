@@ -17,6 +17,7 @@ import {
   saveGeneralItemsToDB,
   saveRecurringGeneralItemToDB,
   deleteRecurringGeneralItemFromDB,
+  saveBusinessInfoToDB,
 } from '@/lib/db';
 import Dashboard from '@/components/Dashboard';
 import AuthScreen from '@/components/AuthScreen';
@@ -199,6 +200,10 @@ export default function Home() {
       if (!prev || JSON.stringify(prev) !== JSON.stringify(r)) saveRecurringGeneralItemToDB(r);
     }
     for (const [id] of prevRG) { if (!newRG.has(id)) deleteRecurringGeneralItemFromDB(id); }
+
+    if (state.businessName !== newState.businessName || state.businessSubtitle !== newState.businessSubtitle) {
+      saveBusinessInfoToDB(newState.businessName, newState.businessSubtitle);
+    }
   };
 
   if (user === undefined) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F3F4F6' }}><div style={{ color: '#9CA3AF' }}>טוען...</div></div>;

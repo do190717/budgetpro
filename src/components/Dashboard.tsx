@@ -18,6 +18,7 @@ import ProjectDetail from './ProjectDetail';
 import FinanceTab from './FinanceTab';
 import GeneralTab from './GeneralTab';
 import ConfirmModal from './ConfirmModal';
+import SettingsModal from './SettingsModal';
 
 interface DashboardProps {
   state: AppState;
@@ -38,6 +39,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
   const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
@@ -101,9 +103,22 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
 
       {/* Header */}
       <div style={{ background: '#1E3A5F', padding: '16px 16px 0' }}>
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ color: '#fff', fontSize: '18px', fontWeight: '500' }}>ניהול פרויקטים</div>
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', marginTop: '2px' }}>ד.א. עבודות פלדה</div>
+        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: '500' }}>
+              {state.businessName || 'ניהול פרויקטים'}
+            </div>
+            {state.businessSubtitle && (
+              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', marginTop: '2px' }}>{state.businessSubtitle}</div>
+            )}
+          </div>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', color: 'rgba(255,255,255,0.8)', fontSize: '18px', width: '34px', height: '34px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            title="הגדרות"
+          >
+            ⚙️
+          </button>
         </div>
 
         {/* KPI */}
@@ -289,6 +304,13 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
         title={confirmState.title}
         onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
         onCancel={() => setConfirmState(s => ({...s, open: false}))}
+      />
+
+      <SettingsModal
+        isOpen={settingsOpen}
+        state={state}
+        onClose={() => setSettingsOpen(false)}
+        onSave={(name, subtitle) => onStateChange({ ...state, businessName: name, businessSubtitle: subtitle })}
       />
     </div>
   );

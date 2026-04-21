@@ -57,4 +57,6 @@ export interface AppState {
   generalIncome: LineItem[];
   generalExpense: LineItem[];
   recurringGeneralItems: RecurringGeneralItem[];
+  businessName: string;
+  businessSubtitle: string;
 }

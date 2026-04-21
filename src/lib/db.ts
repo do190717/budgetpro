@@ -16,6 +16,8 @@ const emptyState: AppState = {
   generalIncome: [],
   generalExpense: [],
   recurringGeneralItems: [],
+  businessName: '',
+  businessSubtitle: '',
 };
 
 export async function loadStateFromDB(): Promise<AppState> {
@@ -62,6 +64,8 @@ export async function loadStateFromDB(): Promise<AppState> {
         ? (deductions || []).map(d => ({ id: d.id, name: d.name, pct: d.pct, enabled: d.enabled }))
         : defaultDeductions,
       maasarPct: settings?.maasar_pct ?? 10,
+      businessName: settings?.business_name || '',
+      businessSubtitle: settings?.business_subtitle || '',
       maasarPayments: (maasarPayments || []).map(p => ({ id: p.id, date: p.date, desc: p.description, amount: p.amount })),
       recurringPayments: (recurringPayments || []).map(r => ({ id: r.id, desc: r.description, amount: r.amount, dayOfMonth: r.day_of_month, lastRegistered: r.last_registered, enabled: r.enabled })),
       generalIncome: (generalItems || []).filter(g => g.type === 'income').map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date })),
@@ -151,4 +155,10 @@ export async function deleteRecurringGeneralItemFromDB(id: string): Promise<void
 
 export async function saveAllDeductionsAndSettings(deductions: Deduction[], maasarPct: number): Promise<void> {
   await Promise.all([saveDeductionsToDB(deductions), saveMaasarPctToDB(maasarPct)]);
+}
+
+export async function saveBusinessInfoToDB(businessName: string, businessSubtitle: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('user_settings').upsert({ user_id: user.id, business_name: businessName, business_subtitle: businessSubtitle });
 }
