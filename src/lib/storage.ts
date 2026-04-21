@@ -17,6 +17,8 @@ const defaultState: AppState = {
   generalIncome: [],
   generalExpense: [],
   recurringGeneralItems: [],
+  businessName: '',
+  businessSubtitle: '',
 };
 
 export function loadState(): AppState {
