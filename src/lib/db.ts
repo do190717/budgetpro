@@ -135,10 +135,27 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
   if (!user) return;
   const dbType = type === 'income' ? 'income' : 'expense';
   const dbCategory = type === 'expenseWork' ? 'work' : type === 'expenseHome' ? 'home' : null;
-  await supabase.from('general_items').delete().eq('user_id', user.id).eq('type', dbType).eq('expense_category', dbCategory ?? 'work');
+
+  // מחיקה לפי type ו-category בנפרד
+  let deleteQuery = supabase.from('general_items').delete().eq('user_id', user.id).eq('type', dbType);
+  if (dbCategory !== null) {
+    deleteQuery = deleteQuery.eq('expense_category', dbCategory);
+  }
+  await deleteQuery;
+
   if (items.length > 0) {
     await supabase.from('general_items').insert(
-      items.map((li, i) => ({ id: li.id, user_id: user.id, type: dbType, expense_category: dbCategory ?? 'work', description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i }))
+      items.map((li, i) => ({
+        id: li.id,
+        user_id: user.id,
+        type: dbType,
+        expense_category: dbCategory,
+        description: li.desc,
+        amount: li.amount,
+        note: li.note,
+        date: li.date || '',
+        sort_order: i,
+      }))
     );
   }
 }
