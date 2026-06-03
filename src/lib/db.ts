@@ -82,16 +82,77 @@ export async function loadStateFromDB(): Promise<AppState> {
 export async function saveProjectToDB(project: Project): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from('projects').upsert({ id: project.id, user_id: user.id, name: project.name, start_date: project.startDate, end_date: project.endDate });
+
+  // שכבה 1 — לא למחוק אם שתי הרשימות ריקות (מניעת מחיקה בטעות)
+  const hasItems = project.income.length > 0 || project.expense.length > 0;
+
+  await supabase.from('projects').upsert({
+    id: project.id,
+    user_id: user.id,
+    name: project.name,
+    start_date: project.startDate,
+    end_date: project.endDate,
+  });
+
+  if (!hasItems) {
+    // אם אין שורות — בדוק קודם אם יש קיימות ב-DB
+    const { data: existing } = await supabase
+      .from('line_items')
+      .select('id')
+      .eq('project_id', project.id)
+      .limit(1);
+
+    // אם יש קיימות — אל תמחק! שמור כפי שהם
+    if (existing && existing.length > 0) return;
+    return;
+  }
+
+  // שכבה 2 — שמור גיבוי לפני מחיקה
+  await backupLineItems(project.id);
+
   const allItems = [
-    ...project.income.map((li, i) => ({ id: li.id, project_id: project.id, type: 'income', description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i })),
-    ...project.expense.map((li, i) => ({ id: li.id, project_id: project.id, type: 'expense', description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i })),
+    ...project.income.map((li, i) => ({
+      id: li.id, project_id: project.id, type: 'income',
+      description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i,
+    })),
+    ...project.expense.map((li, i) => ({
+      id: li.id, project_id: project.id, type: 'expense',
+      description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i,
+    })),
   ];
+
   await supabase.from('line_items').delete().eq('project_id', project.id);
   if (allItems.length > 0) await supabase.from('line_items').insert(allItems);
 }
 
+// שכבה 2 — גיבוי לפני מחיקה
+async function backupLineItems(projectId: string): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: items } = await supabase
+      .from('line_items')
+      .select('*')
+      .eq('project_id', projectId);
+
+    if (!items || items.length === 0) return;
+
+    await supabase.from('line_items_backup').insert(
+      items.map(item => ({
+        ...item,
+        backed_up_at: new Date().toISOString(),
+        backed_up_by: user.id,
+      }))
+    );
+  } catch {
+    // גיבוי נכשל — ממשיכים בכל מקרה
+  }
+}
+
 export async function deleteProjectFromDB(projectId: string): Promise<void> {
+  // גיבוי לפני מחיקת פרויקט
+  await backupLineItems(projectId);
   await supabase.from('projects').delete().eq('id', projectId);
 }
 
@@ -100,7 +161,9 @@ export async function saveDeductionsToDB(deductions: Deduction[]): Promise<void>
   if (!user) return;
   await supabase.from('deductions').delete().eq('user_id', user.id);
   if (deductions.length > 0) {
-    await supabase.from('deductions').insert(deductions.map((d, i) => ({ id: d.id, user_id: user.id, name: d.name, pct: d.pct, enabled: d.enabled, sort_order: i })));
+    await supabase.from('deductions').insert(
+      deductions.map((d, i) => ({ id: d.id, user_id: user.id, name: d.name, pct: d.pct, enabled: d.enabled, sort_order: i }))
+    );
   }
 }
 
@@ -113,7 +176,10 @@ export async function saveMaasarPctToDB(pct: number): Promise<void> {
 export async function saveMaasarPaymentToDB(payment: MaasarPayment): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from('maasar_payments').upsert({ id: payment.id, user_id: user.id, date: payment.date, description: payment.desc, amount: payment.amount });
+  await supabase.from('maasar_payments').upsert({
+    id: payment.id, user_id: user.id, date: payment.date,
+    description: payment.desc, amount: payment.amount,
+  });
 }
 
 export async function deleteMaasarPaymentFromDB(id: string): Promise<void> {
@@ -123,7 +189,11 @@ export async function deleteMaasarPaymentFromDB(id: string): Promise<void> {
 export async function saveRecurringPaymentToDB(rp: RecurringPayment): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from('recurring_payments').upsert({ id: rp.id, user_id: user.id, description: rp.desc, amount: rp.amount, day_of_month: rp.dayOfMonth, last_registered: rp.lastRegistered, enabled: rp.enabled });
+  await supabase.from('recurring_payments').upsert({
+    id: rp.id, user_id: user.id, description: rp.desc,
+    amount: rp.amount, day_of_month: rp.dayOfMonth,
+    last_registered: rp.lastRegistered, enabled: rp.enabled,
+  });
 }
 
 export async function deleteRecurringPaymentFromDB(id: string): Promise<void> {
@@ -136,7 +206,6 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
   const dbType = type === 'income' ? 'income' : 'expense';
   const dbCategory = type === 'expenseWork' ? 'work' : type === 'expenseHome' ? 'home' : null;
 
-  // מחיקה לפי type ו-category בנפרד
   let deleteQuery = supabase.from('general_items').delete().eq('user_id', user.id).eq('type', dbType);
   if (dbCategory !== null) {
     deleteQuery = deleteQuery.eq('expense_category', dbCategory);
@@ -146,15 +215,10 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
   if (items.length > 0) {
     await supabase.from('general_items').insert(
       items.map((li, i) => ({
-        id: li.id,
-        user_id: user.id,
-        type: dbType,
+        id: li.id, user_id: user.id, type: dbType,
         expense_category: dbCategory,
-        description: li.desc,
-        amount: li.amount,
-        note: li.note,
-        date: li.date || '',
-        sort_order: i,
+        description: li.desc, amount: li.amount,
+        note: li.note, date: li.date || '', sort_order: i,
       }))
     );
   }
@@ -181,5 +245,9 @@ export async function saveAllDeductionsAndSettings(deductions: Deduction[], maas
 export async function saveBusinessInfoToDB(businessName: string, businessSubtitle: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from('user_settings').upsert({ user_id: user.id, business_name: businessName, business_subtitle: businessSubtitle });
+  await supabase.from('user_settings').upsert({
+    user_id: user.id,
+    business_name: businessName,
+    business_subtitle: businessSubtitle,
+  });
 }
