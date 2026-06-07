@@ -83,7 +83,7 @@ export async function saveProjectToDB(project: Project): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  // שכבה 1 — לא למחוק אם שתי הרשימות ריקות (מניעת מחיקה בטעות)
+  // שכבה 1 — הגנה מפני מחיקה בטעות
   const hasItems = project.income.length > 0 || project.expense.length > 0;
 
   await supabase.from('projects').upsert({
@@ -95,14 +95,15 @@ export async function saveProjectToDB(project: Project): Promise<void> {
   });
 
   if (!hasItems) {
-    // אם אין שורות חדשות — בדוק אם יש קיימות ב-DB ואל תמחק אותן
+    // בדוק כמה שורות יש ב-DB
     const { data: existing } = await supabase
       .from('line_items')
       .select('id')
-      .eq('project_id', project.id)
-      .limit(1);
-    if (existing && existing.length > 0) return; // יש קיימות — אל תגע
-    return; // אין קיימות — אין מה לשמור
+      .eq('project_id', project.id);
+
+    // אם יש יותר מ-1 שורה ב-DB — זה כנראה טעינה שגויה, אל תמחק
+    if (existing && existing.length > 1) return;
+    // אם יש 0 או 1 — פרויקט חדש או ריקון מכוון, ממשיכים
   }
 
   // יש שורות חדשות — שמור (עם גיבוי)

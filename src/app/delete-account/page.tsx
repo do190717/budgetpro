@@ -19,7 +19,7 @@ export default function DeleteAccount() {
         <ol style={{ paddingRight: '20px', color: '#374151' }}>
           <li style={{ marginBottom: '12px' }}>פתח את האפליקציה והתחבר לחשבונך</li>
           <li style={{ marginBottom: '12px' }}>לחץ על כפתור ⚙️ הגדרות בפינה העליונה</li>
-          <li style={{ marginBottom: '12px' }}>גלול למטה ולחץ על <strong>"יציאה מהחשבון"</strong></li>
+          <li style={{ marginBottom: '12px' }}>גלול למטה ולחץ על <strong>יציאה מהחשבון</strong></li>
           <li style={{ marginBottom: '12px' }}>לאחר מכן שלח בקשת מחיקה באימייל: <a href="mailto:do190717@gmail.com" style={{ color: '#2563EB' }}>do190717@gmail.com</a></li>
           <li>ציין את כתובת האימייל הרשומה — נמחק את החשבון תוך 7 ימי עסקים</li>
         </ol>

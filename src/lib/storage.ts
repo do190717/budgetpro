@@ -1,50 +1,6 @@
 import { AppState, Project, Deduction, MaasarPayment, RecurringPayment } from './types';
 
-const STORAGE_KEY = 'budgetpro_state';
-
-const defaultDeductions: Deduction[] = [
-  { id: '1', name: 'מס הכנסה', pct: 25, enabled: true },
-  { id: '2', name: 'ביטוח לאומי', pct: 12, enabled: true },
-  { id: '3', name: 'מע"מ', pct: 17, enabled: true },
-];
-
-const defaultState: AppState = {
-  projects: [],
-  deductions: defaultDeductions,
-  maasarPct: 10,
-  maasarPayments: [],
-  recurringPayments: [],
-  generalIncome: [],
-  generalExpenseWork: [],
-  generalExpenseHome: [],
-  recurringGeneralItems: [],
-  businessName: '',
-  businessSubtitle: '',
-};
-
-export function loadState(): AppState {
-  if (typeof window === 'undefined') return defaultState;
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return defaultState;
-
-    const parsed = JSON.parse(stored);
-    return { ...defaultState, ...parsed };
-  } catch {
-    return defaultState;
-  }
-}
-
-export function saveState(state: AppState): void {
-  if (typeof window === 'undefined') return;
-
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    console.error('Failed to save state');
-  }
-}
+// פונקציות עזר בלבד — השמירה מתבצעת דרך db.ts עם Supabase
 
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);

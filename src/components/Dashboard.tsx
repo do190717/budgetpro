@@ -188,7 +188,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
 
             {state.projects.length === 0 ? (
               <div style={{ background: '#fff', borderRadius: '12px', padding: '40px 20px', textAlign: 'center', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
-                אין פרויקטים עדיין. לחץ על "פרויקט חדש" להתחלה.
+                אין פרויקטים עדיין. לחץ על &quot;פרויקט חדש&quot; להתחלה.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -201,7 +201,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                   const handlePressStart = () => {
                     pressTimer = setTimeout(() => {
                       setConfirmState({ open: true, title: `למחוק את הפרויקט "${project.name}"?`, onConfirm: () => { onStateChange(deleteProject(state, project.id)); } });
-                    }, 3000);
+                    }, 600);
                   };
                   const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
 

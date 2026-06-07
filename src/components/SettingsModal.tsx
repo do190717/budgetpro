@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppState } from '@/lib/types';
 import { saveBusinessInfoToDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
@@ -20,14 +20,17 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
   const [businessSubtitle, setBusinessSubtitle] = useState(state.businessSubtitle);
   const [userEmail, setUserEmail] = useState('');
   const [saving, setSaving] = useState(false);
+  const prevIsOpen = useRef(false);
 
+  // תיקון: השוואה ידנית במקום setState ישיר בתוך effect
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpen.current) {
       setSection('main');
       setBusinessName(state.businessName);
       setBusinessSubtitle(state.businessSubtitle);
       supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email || ''));
     }
+    prevIsOpen.current = isOpen;
   }, [isOpen, state.businessName, state.businessSubtitle]);
 
   const handleSave = async () => {
@@ -64,7 +67,6 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', direction: 'rtl' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: '#F3F4F6', borderRadius: '16px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden', maxHeight: '85vh', overflowY: 'auto' }}>
 
-        {/* ===== מסך ראשי ===== */}
         {section === 'main' && (<>
           <div style={{ background: '#1E3A5F', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: '#fff', fontSize: '16px', fontWeight: '500' }}>הגדרות</span>
@@ -128,7 +130,6 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
           </div>
         </>)}
 
-        {/* ===== פרטי עסק ===== */}
         {section === 'business' && (<>
           {sectionHeader('פרטי עסק')}
           <div style={{ padding: '16px' }}>
@@ -151,7 +152,6 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
           </div>
         </>)}
 
-        {/* ===== יצירת קשר ===== */}
         {section === 'contact' && (<>
           {sectionHeader('יצירת קשר ותמיכה')}
           <div style={{ padding: '12px 8px' }}>
@@ -159,7 +159,7 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
               {[
                 { icon: '📧', label: 'אימייל', value: 'do190717@gmail.com', action: () => window.open('mailto:do190717@gmail.com') },
                 { icon: '📱', label: 'טלפון / WhatsApp', value: '050-4190717', action: () => window.open('https://wa.me/972504190717') },
-                { icon: '🌐', label: 'אתר האפליקציה', value: 'budgetpro-sepia.vercel.app', action: () => window.open('https://budgetpro-sepia.vercel.app', '_blank') },
+                { icon: '🌐', label: 'אתר האפליקציה', value: 'app-budgetpro.co.il', action: () => window.open('https://app-budgetpro.co.il', '_blank') },
               ].map((item, i, arr) => (
                 <div key={item.label} onClick={item.action} style={{ ...rowStyle, borderBottom: i < arr.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -177,7 +177,6 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
           </div>
         </>)}
 
-        {/* ===== מדיניות פרטיות ===== */}
         {section === 'privacy' && (<>
           {sectionHeader('מדיניות פרטיות')}
           <div style={{ padding: '16px 12px' }}>
@@ -189,14 +188,13 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
                 הנתונים שלך מאוחסנים בצורה מוצפנת ומאובטחת. כל משתמש רואה אך ורק את הנתונים שלו.
               </p>
             </div>
-            <button onClick={() => window.open('https://budgetpro-sepia.vercel.app/privacy-policy', '_blank')}
+            <button onClick={() => window.open('https://app-budgetpro.co.il/privacy-policy', '_blank')}
               style={{ width: '100%', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '10px', padding: '12px', fontSize: '14px', color: '#2563EB', cursor: 'pointer' }}>
               קרא את מדיניות הפרטיות המלאה ↗
             </button>
           </div>
         </>)}
 
-        {/* ===== אודות ===== */}
         {section === 'about' && (<>
           {sectionHeader('אודות BudgetPro')}
           <div style={{ padding: '24px 16px', textAlign: 'center' }}>

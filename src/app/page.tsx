@@ -6,7 +6,6 @@ import { generateId } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
 import {
   loadStateFromDB,
-  saveProjectToDB,
   deleteProjectFromDB,
   saveDeductionsToDB,
   saveMaasarPctToDB,
@@ -149,7 +148,7 @@ export default function Home() {
       setState(current);
       if (allNotifications.length > 0) {
         setToast(allNotifications.join('\n'));
-        setTimeout(() => setToast(null), 30000);
+        setTimeout(() => setToast(null), 6000);
       }
     });
   }, [user]);

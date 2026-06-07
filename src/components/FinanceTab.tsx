@@ -28,7 +28,6 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   const [paymentDesc, setPaymentDesc] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isEditingDeduction, setIsEditingDeduction] = useState<string | null>(null);
   const [isDeductionsOpen, setIsDeductionsOpen] = useState(false);
   const [focusedDeductionId, setFocusedDeductionId] = useState<string | null>(null);
   const [addMode, setAddMode] = useState<AddMode>(null);
@@ -38,7 +37,6 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   const [recurringDay, setRecurringDay] = useState('1');
   const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
-  // כלל הרווח = פרויקטים + כללי עסקי (בסיס מעשר)
   const totalProfit = calcGrandTotalProfit(state);
   const totalDeductions = calcTotalDeductions(totalProfit, state.deductions);
   const netProfit = calcNetProfit(totalProfit, state.deductions);
@@ -57,7 +55,6 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   const handleUpdateDeductionPct = (deductionId: string, pct: number) => {
     const updated = state.deductions.map(d => d.id === deductionId ? { ...d, pct } : d);
     onStateChange(updateDeductions(state, updated));
-    setIsEditingDeduction(null);
   };
 
   const handleUpdateMaasarPct = (pct: number) => { onStateChange(updateMaasarPct(state, pct)); };
@@ -78,7 +75,6 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   const addNewDeduction = () => {
     const newDeduction: Deduction = { id: generateId(), name: 'ניכוי חדש', pct: 0, enabled: true };
     onStateChange(updateDeductions(state, [...state.deductions, newDeduction]));
-    setIsEditingDeduction(newDeduction.id);
   };
 
   const deleteDeduction = (deductionId: string) => {
