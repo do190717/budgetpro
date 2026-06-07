@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { AppState, Project } from '@/lib/types';
 import { generateId, addProject, deleteProject } from '@/lib/storage';
+import { saveProjectToDB } from '@/lib/db';
 import {
   calcProjectIncome,
   calcProjectExpense,
@@ -40,6 +41,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
   const [editingNameValue, setEditingNameValue] = useState('');
   const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
@@ -62,14 +64,30 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
     setConfirmState({
       open: true,
       title: 'האם למחוק את הפרויקט?',
-      onConfirm: () => {
-        onStateChange(deleteProject(state, projectId));
-      }
+      onConfirm: () => { onStateChange(deleteProject(state, projectId)); }
     });
   };
 
   const handleProjectUpdate = (project: Project) => {
     onStateChange({ ...state, projects: state.projects.map(p => p.id === project.id ? project : p) });
+    // debounce שמירה
+    if (saveTimers.current.has(project.id)) clearTimeout(saveTimers.current.get(project.id)!);
+    saveTimers.current.set(project.id, setTimeout(() => saveProjectToDB(project), 1500));
+  };
+
+  const handleBack = () => {
+    // שמירה מיידית לפני יציאה
+    if (selectedProject) {
+      const current = state.projects.find(p => p.id === selectedProject.id);
+      if (current) {
+        if (saveTimers.current.has(current.id)) {
+          clearTimeout(saveTimers.current.get(current.id)!);
+          saveTimers.current.delete(current.id);
+        }
+        saveProjectToDB(current);
+      }
+    }
+    setSelectedProject(null);
   };
 
   if (selectedProject) {
@@ -78,7 +96,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
       return (
         <ProjectDetail
           project={current}
-          onBack={() => setSelectedProject(null)}
+          onBack={handleBack}
           onUpdate={handleProjectUpdate}
         />
       );
@@ -100,8 +118,6 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
 
   return (
     <div style={{ maxWidth: '480px', margin: '0 auto', direction: 'rtl', minHeight: '100vh', background: '#F3F4F6' }}>
-
-      {/* Header */}
       <div style={{ background: '#1E3A5F', padding: '16px 16px 0' }}>
         <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
@@ -115,13 +131,9 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
           <button
             onClick={() => setSettingsOpen(true)}
             style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', color: 'rgba(255,255,255,0.8)', fontSize: '18px', width: '34px', height: '34px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-            title="הגדרות"
-          >
-            ⚙️
-          </button>
+          >⚙️</button>
         </div>
 
-        {/* KPI */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '14px' }}>
           {[
             { label: 'הכנסות', grand: grandIncome, proj: projIncome, color: '#9FE1CB' },
@@ -132,70 +144,36 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginBottom: '3px' }}>{label}</div>
               <div style={{ color, fontSize: '20px', fontWeight: '500' }}>{fmt(grand)}</div>
               {grand !== proj && (
-                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginTop: '3px' }}>
-                  פרויקטים {fmt(proj)}
-                </div>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginTop: '3px' }}>פרויקטים {fmt(proj)}</div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Tabs */}
         <div style={{ display: 'flex' }}>
           {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              style={{
-                flex: 1,
-                padding: '10px',
-                fontSize: '13px',
-                fontWeight: activeTab === tab.id ? '500' : '400',
-                color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.55)',
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === tab.id ? '2px solid #60A5FA' : '2px solid transparent',
-                cursor: 'pointer',
-              }}
-            >
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as Tab)}
+              style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: activeTab === tab.id ? '500' : '400', color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.55)', background: 'none', border: 'none', borderBottom: activeTab === tab.id ? '2px solid #60A5FA' : '2px solid transparent', cursor: 'pointer' }}>
               {tab.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Content */}
       <div style={{ padding: '12px' }}>
-        {activeTab === 'general' && (
-          <GeneralTab state={state} onStateChange={onStateChange} />
-        )}
-
-        {activeTab === 'finance' && (
-          <FinanceTab state={state} onStateChange={onStateChange} />
-        )}
-
+        {activeTab === 'general' && <GeneralTab state={state} onStateChange={onStateChange} />}
+        {activeTab === 'finance' && <FinanceTab state={state} onStateChange={onStateChange} />}
         {activeTab === 'projects' && (
           <>
             {isCreating ? (
               <div style={{ background: '#fff', borderRadius: '12px', padding: '14px', marginBottom: '10px', border: '1px solid #E5E7EB' }}>
                 <div style={{ fontWeight: '500', marginBottom: '10px', color: '#1F2937' }}>פרויקט חדש</div>
-                <input
-                  type="text"
-                  value={newProjectName}
-                  onChange={e => setNewProjectName(e.target.value)}
-                  placeholder="שם הפרויקט..."
-                  autoFocus
-                  onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
-                  style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', direction: 'rtl', outline: 'none', marginBottom: '8px', boxSizing: 'border-box' }}
-                />
+                <input type="text" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="שם הפרויקט..." autoFocus onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
+                  style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', direction: 'rtl', outline: 'none', marginBottom: '8px', boxSizing: 'border-box' }} />
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
                   <label style={{ fontSize: '12px', color: '#6B7280', whiteSpace: 'nowrap' }}>תאריך התחלה:</label>
-                  <input
-                    type="date"
-                    value={newProjectDeadline}
-                    onChange={e => setNewProjectDeadline(e.target.value)}
-                    style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', direction: 'ltr', outline: 'none' }}
-                  />
+                  <input type="date" value={newProjectDeadline} onChange={e => setNewProjectDeadline(e.target.value)}
+                    style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', direction: 'ltr', outline: 'none' }} />
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={handleCreateProject} style={{ flex: 1, background: '#2563EB', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}>צור פרויקט</button>
@@ -219,54 +197,34 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                   const expense = calcProjectExpense(project);
                   const profit = calcProjectProfit(project);
                   const cardBg = idx % 2 === 0 ? '#F0F7FF' : '#F8FBFF';
-
                   let pressTimer: ReturnType<typeof setTimeout> | null = null;
                   const handlePressStart = () => {
                     pressTimer = setTimeout(() => {
-                      setConfirmState({
-                        open: true,
-                        title: `למחוק את הפרויקט "${project.name}"?`,
-                        onConfirm: () => {
-                          onStateChange(deleteProject(state, project.id));
-                        }
-                      });
+                      setConfirmState({ open: true, title: `למחוק את הפרויקט "${project.name}"?`, onConfirm: () => { onStateChange(deleteProject(state, project.id)); } });
                     }, 600);
                   };
                   const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
 
                   return (
-                    <div
-                      key={project.id}
+                    <div key={project.id}
                       onClick={() => editingNameId !== project.id && setSelectedProject(project)}
                       onMouseEnter={() => setHoveredCardId(project.id)}
                       onMouseLeave={() => { setHoveredCardId(null); handlePressEnd(); }}
-                      onMouseDown={handlePressStart}
-                      onMouseUp={handlePressEnd}
-                      onTouchStart={handlePressStart}
-                      onTouchEnd={handlePressEnd}
-                      style={{ background: cardBg, borderRadius: '12px', border: '1px solid #DBEAFE', overflow: 'hidden', cursor: 'pointer', userSelect: 'none' }}
-                    >
+                      onMouseDown={handlePressStart} onMouseUp={handlePressEnd}
+                      onTouchStart={handlePressStart} onTouchEnd={handlePressEnd}
+                      style={{ background: cardBg, borderRadius: '12px', border: '1px solid #DBEAFE', overflow: 'hidden', cursor: 'pointer', userSelect: 'none' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '11px 14px 8px', direction: 'rtl' }}>
                         {editingNameId === project.id ? (
-                          <input
-                            type="text"
-                            value={editingNameValue}
-                            autoFocus
-                            onChange={e => setEditingNameValue(e.target.value)}
+                          <input type="text" value={editingNameValue} autoFocus onChange={e => setEditingNameValue(e.target.value)}
                             onBlur={() => { if (editingNameValue.trim()) handleProjectUpdate({ ...project, name: editingNameValue.trim() }); setEditingNameId(null); }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') { if (editingNameValue.trim()) handleProjectUpdate({ ...project, name: editingNameValue.trim() }); setEditingNameId(null); }
-                              if (e.key === 'Escape') setEditingNameId(null);
-                            }}
-                            onClick={e => e.stopPropagation()}
-                            onMouseDown={e => e.stopPropagation()}
-                            style={{ fontSize: '15px', fontWeight: '500', color: '#1F2937', border: 'none', borderBottom: '2px solid #2563EB', background: 'transparent', outline: 'none', direction: 'rtl', width: '100%' }}
-                          />
+                            onKeyDown={e => { if (e.key === 'Enter') { if (editingNameValue.trim()) handleProjectUpdate({ ...project, name: editingNameValue.trim() }); setEditingNameId(null); } if (e.key === 'Escape') setEditingNameId(null); }}
+                            onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}
+                            style={{ fontSize: '15px', fontWeight: '500', color: '#1F2937', border: 'none', borderBottom: '2px solid #2563EB', background: 'transparent', outline: 'none', direction: 'rtl', width: '100%' }} />
                         ) : (
-                          <div
-                            style={{ fontSize: '15px', fontWeight: '500', color: '#1F2937' }}
-                            onDoubleClick={e => { e.stopPropagation(); setEditingNameId(project.id); setEditingNameValue(project.name); }}
-                          >{project.name}</div>
+                          <div style={{ fontSize: '15px', fontWeight: '500', color: '#1F2937' }}
+                            onDoubleClick={e => { e.stopPropagation(); setEditingNameId(project.id); setEditingNameValue(project.name); }}>
+                            {project.name}
+                          </div>
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
                           <input type="date" value={project.startDate || ''} onChange={e => handleProjectUpdate({ ...project, startDate: e.target.value })} style={{ border: 'none', background: 'transparent', fontSize: '11px', color: '#9CA3AF', direction: 'ltr', outline: 'none', width: '100px', cursor: 'pointer' }} />
@@ -277,7 +235,6 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                           )}
                         </div>
                       </div>
-
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderTop: '1px solid #F3F4F6' }}>
                         {[
                           { label: 'הכנסות', value: income, color: '#059669' },
@@ -299,19 +256,12 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
         )}
       </div>
 
-      <ConfirmModal
-        isOpen={confirmState.open}
-        title={confirmState.title}
+      <ConfirmModal isOpen={confirmState.open} title={confirmState.title}
         onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
-        onCancel={() => setConfirmState(s => ({...s, open: false}))}
-      />
+        onCancel={() => setConfirmState(s => ({...s, open: false}))} />
 
-      <SettingsModal
-        isOpen={settingsOpen}
-        state={state}
-        onClose={() => setSettingsOpen(false)}
-        onSave={(name, subtitle) => onStateChange({ ...state, businessName: name, businessSubtitle: subtitle })}
-      />
+      <SettingsModal isOpen={settingsOpen} state={state} onClose={() => setSettingsOpen(false)}
+        onSave={(name, subtitle) => onStateChange({ ...state, businessName: name, businessSubtitle: subtitle })} />
     </div>
   );
 }

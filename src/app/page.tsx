@@ -92,7 +92,7 @@ function checkRecurringGeneralItems(state: AppState): { state: AppState; notific
     if (months.length === 0) { updatedItems.push(rg); continue; }
 
     const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
-    const typeLabel = rg.type === 'income' ? 'הכנסה' : rg.type === 'expenseWork' ? 'הוצאה עסקית' : 'הוצאה ביתית';
+    const typeLabel = rg.type === 'income' ? 'הכנסה' : 'הוצאה';
     const confirmed = window.confirm(`${typeLabel} קבועה ממתינה:\n"${rg.desc}" — ${fmt(rg.amount)}${months.length > 1 ? `\n(${months.length} חודשים)` : ''}\n\nלאשר ולרשום?`);
     if (!confirmed) { updatedItems.push(rg); continue; }
 
@@ -158,15 +158,9 @@ export default function Home() {
     if (!state) return;
     setState(newState);
 
+    // פרויקטים נשמרים ישירות מ-Dashboard.tsx — כאן רק מחיקות
     const prevProjects = new Map(state.projects.map(p => [p.id, p]));
     const newProjects = new Map(newState.projects.map(p => [p.id, p]));
-    for (const [id, project] of newProjects) {
-      const prev = prevProjects.get(id);
-      if (!prev || JSON.stringify(prev) !== JSON.stringify(project)) {
-        if (saveTimers.current.has(id)) clearTimeout(saveTimers.current.get(id)!);
-        saveTimers.current.set(id, setTimeout(() => saveProjectToDB(project), 800));
-      }
-    }
     for (const [id] of prevProjects) { if (!newProjects.has(id)) deleteProjectFromDB(id); }
 
     if (JSON.stringify(state.deductions) !== JSON.stringify(newState.deductions)) saveDeductionsToDB(newState.deductions);
