@@ -260,8 +260,10 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
         onConfirm={() => { confirmState.onConfirm(); setConfirmState(s => ({...s, open: false})); }}
         onCancel={() => setConfirmState(s => ({...s, open: false}))} />
 
-      <SettingsModal isOpen={settingsOpen} state={state} onClose={() => setSettingsOpen(false)}
-        onSave={(name, subtitle) => onStateChange({ ...state, businessName: name, businessSubtitle: subtitle })} />
+      {settingsOpen && (
+        <SettingsModal state={state} onClose={() => setSettingsOpen(false)}
+          onSave={(name, subtitle) => onStateChange({ ...state, businessName: name, businessSubtitle: subtitle })} />
+      )}
     </div>
   );
 }

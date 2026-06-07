@@ -99,7 +99,7 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   const homeBalance = calcGeneralHomeBalance(state);
 
   const toggleExpand = (id: string) => {
-    setExpandedRows(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setExpandedRows(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
   };
 
   const updateItem = (field: TableType, itemId: string, key: keyof LineItem, value: string | number) => {
@@ -231,7 +231,6 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     const allYears = Array.from(byYearMonth.keys()).sort((a, b) => b.localeCompare(a));
     const curSelYear = selectedYear[field];
     const curSelMonth = selectedMonth[field];
-    const monthsInYear = byYearMonth.get(curSelYear) ? Array.from(byYearMonth.get(curSelYear)!.keys()).sort((a, b) => b.localeCompare(a)) : [];
     const items = byYearMonth.get(curSelYear)?.get(curSelMonth) || [];
     const monthTotal = items.reduce((s, i) => s + i.amount, 0);
     const isCurrentPeriod = curSelYear === curYear && curSelMonth === curMonth;

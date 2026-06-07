@@ -38,7 +38,7 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
   const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
   const toggleSort = (type: string) => {
-    setSortedTypes(prev => { const s = new Set(prev); s.has(type) ? s.delete(type) : s.add(type); return s; });
+    setSortedTypes(prev => { const s = new Set(prev); if (s.has(type)) s.delete(type); else s.add(type); return s; });
   };
 
   const getSortedItems = (items: LineItem[], type: string) => {

@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { AppState } from '@/lib/types';
 import { saveBusinessInfoToDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
 interface Props {
-  isOpen: boolean;
   state: AppState;
   onClose: () => void;
   onSave: (businessName: string, businessSubtitle: string) => void;
@@ -14,24 +13,18 @@ interface Props {
 
 type Section = 'main' | 'business' | 'contact' | 'privacy' | 'about';
 
-export default function SettingsModal({ isOpen, state, onClose, onSave }: Props) {
+export default function SettingsModal({ state, onClose, onSave }: Props) {
   const [section, setSection] = useState<Section>('main');
   const [businessName, setBusinessName] = useState(state.businessName);
   const [businessSubtitle, setBusinessSubtitle] = useState(state.businessSubtitle);
   const [userEmail, setUserEmail] = useState('');
   const [saving, setSaving] = useState(false);
-  const prevIsOpen = useRef(false);
 
-  // תיקון: השוואה ידנית במקום setState ישיר בתוך effect
+  // המודאל מרונדר רק כשהוא פתוח (mount טרי) — אתחול הטופס מתבצע
+  // דרך ערכי ההתחלה של useState, וכאן רק שליפת האימייל מהשרת.
   useEffect(() => {
-    if (isOpen && !prevIsOpen.current) {
-      setSection('main');
-      setBusinessName(state.businessName);
-      setBusinessSubtitle(state.businessSubtitle);
-      supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email || ''));
-    }
-    prevIsOpen.current = isOpen;
-  }, [isOpen, state.businessName, state.businessSubtitle]);
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email || ''));
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -46,7 +39,6 @@ export default function SettingsModal({ isOpen, state, onClose, onSave }: Props)
     window.location.reload();
   };
 
-  if (!isOpen) return null;
 
   const rowStyle: React.CSSProperties = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',

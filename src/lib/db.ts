@@ -101,12 +101,16 @@ export async function saveProjectToDB(project: Project): Promise<void> {
       .select('id')
       .eq('project_id', project.id);
 
-    // אם יש יותר מ-1 שורה ב-DB — זה כנראה טעינה שגויה, אל תמחק
+    // אם יש יותר מ-1 שורה ב-DB אבל אין במצב — כנראה טעינה חלקית/שגויה, אל תמחק
     if (existing && existing.length > 1) return;
-    // אם יש 0 או 1 — פרויקט חדש או ריקון מכוון, ממשיכים
+
+    // ריקון לגיטימי (0 או 1 שורה) — גבה ומחק את כל שורות הפרויקט
+    await backupLineItems(project.id);
+    await supabase.from('line_items').delete().eq('project_id', project.id);
+    return;
   }
 
-  // יש שורות חדשות — שמור (עם גיבוי)
+  // יש שורות — שמור (עם גיבוי)
   await backupLineItems(project.id);
 
   const allItems = [
