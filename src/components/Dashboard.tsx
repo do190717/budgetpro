@@ -201,7 +201,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                   const handlePressStart = () => {
                     pressTimer = setTimeout(() => {
                       setConfirmState({ open: true, title: `למחוק את הפרויקט "${project.name}"?`, onConfirm: () => { onStateChange(deleteProject(state, project.id)); } });
-                    }, 600);
+                    }, 3000);
                   };
                   const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
 

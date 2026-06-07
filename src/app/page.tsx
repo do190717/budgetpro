@@ -149,7 +149,7 @@ export default function Home() {
       setState(current);
       if (allNotifications.length > 0) {
         setToast(allNotifications.join('\n'));
-        setTimeout(() => setToast(null), 6000);
+        setTimeout(() => setToast(null), 30000);
       }
     });
   }, [user]);

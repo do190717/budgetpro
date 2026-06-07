@@ -112,7 +112,7 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
               deleteRow(type, item.id);
             }
           });
-        }, 600);
+        }, 3000);
       };
 
       const handlePressEnd = () => {
