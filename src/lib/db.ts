@@ -95,19 +95,17 @@ export async function saveProjectToDB(project: Project): Promise<void> {
   });
 
   if (!hasItems) {
-    // אם אין שורות — בדוק קודם אם יש קיימות ב-DB
+    // אם אין שורות חדשות — בדוק אם יש קיימות ב-DB ואל תמחק אותן
     const { data: existing } = await supabase
       .from('line_items')
       .select('id')
       .eq('project_id', project.id)
       .limit(1);
-
-    // אם יש קיימות — אל תמחק! שמור כפי שהם
-    if (existing && existing.length > 0) return;
-    return;
+    if (existing && existing.length > 0) return; // יש קיימות — אל תגע
+    return; // אין קיימות — אין מה לשמור
   }
 
-  // שכבה 2 — שמור גיבוי לפני מחיקה
+  // יש שורות חדשות — שמור (עם גיבוי)
   await backupLineItems(project.id);
 
   const allItems = [
@@ -121,8 +119,16 @@ export async function saveProjectToDB(project: Project): Promise<void> {
     })),
   ];
 
-  await supabase.from('line_items').delete().eq('project_id', project.id);
-  if (allItems.length > 0) await supabase.from('line_items').insert(allItems);
+  // upsert השורות הקיימות
+  await supabase.from('line_items').upsert(allItems);
+
+  // מחק שורות שנמחקו על ידי המשתמש
+  const currentIds = allItems.map(i => i.id);
+  await supabase.from('line_items')
+    .delete()
+    .eq('project_id', project.id)
+    .not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
+
 }
 
 // שכבה 2 — גיבוי לפני מחיקה
