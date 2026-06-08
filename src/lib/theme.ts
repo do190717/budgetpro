@@ -51,6 +51,7 @@ export const colors = {
   cream: '#F1EFE8',       // שורת הערה
   focusBg: '#EEF4FF',
   white: '#FFFFFF',
+  overlay: 'rgba(0,0,0,0.45)', // רקע כהה של מודאלים
 } as const;
 
 export const radius = {

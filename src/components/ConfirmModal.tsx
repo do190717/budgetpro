@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { colors } from '@/lib/theme';
 
 interface Props {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export default function ConfirmModal({
       onClick={onCancel}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.45)',
+        background: colors.overlay,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '24px',
         direction: 'rtl',
@@ -48,7 +49,7 @@ export default function ConfirmModal({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#fff',
+          background: colors.white,
           borderRadius: '16px',
           padding: '24px',
           width: '100%',
@@ -56,12 +57,12 @@ export default function ConfirmModal({
           boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
         }}
       >
-        <div style={{ fontSize: '17px', fontWeight: '500', color: '#1F2937', marginBottom: message ? '8px' : '20px', textAlign: 'right' }}>
+        <div style={{ fontSize: '17px', fontWeight: '500', color: colors.gray900, marginBottom: message ? '8px' : '20px', textAlign: 'right' }}>
           {title}
         </div>
 
         {message && (
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px', textAlign: 'right', lineHeight: '1.5' }}>
+          <div style={{ fontSize: '14px', color: colors.gray500, marginBottom: '20px', textAlign: 'right', lineHeight: '1.5' }}>
             {message}
           </div>
         )}
@@ -74,8 +75,8 @@ export default function ConfirmModal({
               padding: '11px',
               borderRadius: '10px',
               border: 'none',
-              background: danger ? '#EF4444' : '#2563EB',
-              color: '#fff',
+              background: danger ? colors.redStrong : colors.blue,
+              color: colors.white,
               fontSize: '15px',
               fontWeight: '500',
               cursor: 'pointer',
@@ -89,9 +90,9 @@ export default function ConfirmModal({
               flex: 1,
               padding: '11px',
               borderRadius: '10px',
-              border: '1px solid #E5E7EB',
-              background: '#F9FAFB',
-              color: '#374151',
+              border: `1px solid ${colors.gray200}`,
+              background: colors.gray50,
+              color: colors.gray700,
               fontSize: '15px',
               cursor: 'pointer',
             }}
