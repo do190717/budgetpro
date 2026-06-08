@@ -94,24 +94,9 @@ export async function saveProjectToDB(project: Project): Promise<void> {
     end_date: project.endDate,
   });
 
-  if (!hasItems) {
-    // בדוק כמה שורות יש ב-DB
-    const { data: existing } = await supabase
-      .from('line_items')
-      .select('id')
-      .eq('project_id', project.id);
-
-    // אם יש יותר מ-1 שורה ב-DB אבל אין במצב — כנראה טעינה חלקית/שגויה, אל תמחק
-    if (existing && existing.length > 1) return;
-
-    // ריקון לגיטימי (0 או 1 שורה) — גבה ומחק את כל שורות הפרויקט
-    await backupLineItems(project.id);
-    await supabase.from('line_items').delete().eq('project_id', project.id);
-    return;
-  }
-
-  // יש שורות — שמור (עם גיבוי)
-  await backupLineItems(project.id);
+  // 🚨 מצב APPEND-ONLY זמני: לא מוחקים שורות אוטומטית בכלל.
+  // אם אין שורות במצב — לא נוגעים ב-DB (לא מוחקים).
+  if (!hasItems) return;
 
   const allItems = [
     ...project.income.map((li, i) => ({
@@ -126,22 +111,8 @@ export async function saveProjectToDB(project: Project): Promise<void> {
     })),
   ];
 
-  // upsert השורות הקיימות
-  const { error: upsertError } = await supabase.from('line_items').upsert(allItems);
-
-  // ⛔ אם השמירה נכשלה — לא ממשיכים למחיקה, כדי לא לאבד נתונים קיימים
-  if (upsertError) {
-    console.error('שמירת שורות נכשלה — מדלגים על המחיקה כדי לא לאבד נתונים:', upsertError);
-    return;
-  }
-
-  // מחק שורות שנמחקו על ידי המשתמש
-  const currentIds = allItems.map(i => i.id);
-  await supabase.from('line_items')
-    .delete()
-    .eq('project_id', project.id)
-    .not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
-
+  // upsert בלבד — מוסיף/מעדכן, לעולם לא מוחק
+  await supabase.from('line_items').upsert(allItems);
 }
 
 // שכבה 2 — גיבוי לפני מחיקה
@@ -219,21 +190,6 @@ export async function deleteRecurringPaymentFromDB(id: string): Promise<void> {
   await supabase.from('recurring_payments').delete().eq('id', id);
 }
 
-// גיבוי פריטים כלליים לפני מחיקה — רשת ביטחון מקבילה לזו של הפרויקטים
-async function backupGeneralItems(userId: string, dbType: string, dbCategory: string | null): Promise<void> {
-  try {
-    let q = supabase.from('general_items').select('*').eq('user_id', userId).eq('type', dbType);
-    if (dbCategory !== null) q = q.eq('expense_category', dbCategory);
-    const { data: items } = await q;
-    if (!items || items.length === 0) return;
-    await supabase.from('general_items_backup').insert(
-      items.map(item => ({ ...item, backed_up_at: new Date().toISOString(), backed_up_by: userId }))
-    );
-  } catch {
-    // גיבוי נכשל — ממשיכים
-  }
-}
-
 export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | 'expenseWork' | 'expenseHome'): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
@@ -248,37 +204,10 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
     vatable: li.vatable ?? true,
   }));
 
-  // כמה שורות קיימות ב-DB לקטגוריה הזו
-  let countQ = supabase.from('general_items').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('type', dbType);
-  if (dbCategory !== null) countQ = countQ.eq('expense_category', dbCategory);
-  const { count: existingCount } = await countQ;
-
-  // 🛡️ הגנה: רשימה ריקה מול נתונים קיימים = כנראה מצב חלקי/שגוי — אל תמחק הכל
-  if (rows.length === 0 && (existingCount ?? 0) > 1) {
-    console.warn('דילוג על מחיקת general_items — רשימה ריקה מול נתונים קיימים ב-DB');
-    return;
-  }
-
-  // 🛟 גיבוי לפני כל מחיקה
-  await backupGeneralItems(user.id, dbType, dbCategory);
-
-  // שומרים קודם (upsert) — ואם נכשל, לא ממשיכים למחיקה כדי לא לאבד נתונים
+  // 🚨 מצב APPEND-ONLY זמני: רק מוסיפים/מעדכנים, אף פעם לא מוחקים.
   if (rows.length > 0) {
-    const { error } = await supabase.from('general_items').upsert(rows);
-    if (error) {
-      console.error('שמירת פריטים כלליים נכשלה — מדלגים על המחיקה:', error);
-      return;
-    }
+    await supabase.from('general_items').upsert(rows);
   }
-
-  // מחיקת שורות ישנות מאותו סוג/קטגוריה שכבר אינן במצב הנוכחי
-  let del = supabase.from('general_items').delete().eq('user_id', user.id).eq('type', dbType);
-  if (dbCategory !== null) del = del.eq('expense_category', dbCategory);
-  const currentIds = rows.map(r => r.id);
-  if (currentIds.length > 0) {
-    del = del.not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
-  }
-  await del;
 }
 
 export async function saveRecurringGeneralItemToDB(item: RecurringGeneralItem): Promise<void> {
