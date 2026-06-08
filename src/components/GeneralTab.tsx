@@ -106,6 +106,10 @@ export default function GeneralTab({ state, onStateChange }: Props) {
     onStateChange({ ...state, [field]: (state[field] as LineItem[]).map((item: LineItem) => item.id === itemId ? { ...item, [key]: value } : item) });
   };
 
+  const toggleVat = (field: TableType, itemId: string) => {
+    onStateChange({ ...state, [field]: (state[field] as LineItem[]).map((item: LineItem) => item.id === itemId ? { ...item, vatable: item.vatable === false } : item) });
+  };
+
   const deleteRow = (field: TableType, itemId: string) => {
     onStateChange({ ...state, [field]: (state[field] as LineItem[]).filter((item: LineItem) => item.id !== itemId) });
     setExpandedRows(prev => { const s = new Set(prev); s.delete(itemId); return s; });
@@ -359,7 +363,15 @@ export default function GeneralTab({ state, onStateChange }: Props) {
                       style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '10px', color: 'transparent', direction: 'ltr', width: '100%', cursor: 'pointer', padding: '8px 0', opacity: 0, position: 'absolute', inset: 0 }} />
                   </div>
                   {/* תיאור */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {field !== 'generalExpenseHome' && (
+                      <button onClick={() => toggleVat(field, item.id)} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}
+                        title={item.vatable === false ? 'פטור ממע"מ — לחץ לסמן כחייב' : 'חייב במע"מ — לחץ לסמן כפטור'}
+                        style={{ flexShrink: 0, cursor: 'pointer', border: 'none', borderRadius: '999px', fontSize: '9px', fontWeight: 600, padding: '2px 5px', whiteSpace: 'nowrap', lineHeight: 1.3,
+                          background: item.vatable === false ? '#FEF3C7' : '#D1FAE5', color: item.vatable === false ? '#92400E' : '#065F46' }}>
+                        {item.vatable === false ? 'פטור' : 'מע"מ'}
+                      </button>
+                    )}
                     <input type="text" value={item.desc} onChange={e => updateItem(field, item.id, 'desc', e.target.value)} placeholder="תיאור..."
                       style={inputStyle} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()} />
                   </div>

@@ -95,6 +95,52 @@ export function calcGrandTotalExpense(state: AppState): number {
   return calcTotalExpense(state.projects) + calcGeneralExpense(state.generalExpenseWork || []) + calcGeneralExpense(state.generalExpenseHome || []);
 }
 
+// ===== מע"מ ברמת כל העסק (פרויקטים + כללי) =====
+
+// סך הכנסות חייבות מע"מ (כולל מע"מ) — הכנסות פרויקטים + הכנסות כלליות
+export function calcStateVatableIncome(state: AppState): number {
+  const all = [...state.projects.flatMap(p => p.income), ...(state.generalIncome || [])];
+  return all.filter(isVatable).reduce((s, i) => s + i.amount, 0);
+}
+
+// סך הוצאות עסקיות חייבות מע"מ (כולל מע"מ) — הוצאות פרויקטים + הוצאות עסקיות כלליות (ללא ביתיות)
+export function calcStateVatableExpense(state: AppState): number {
+  const all = [...state.projects.flatMap(p => p.expense), ...(state.generalExpenseWork || [])];
+  return all.filter(isVatable).reduce((s, i) => s + i.amount, 0);
+}
+
+// מע"מ עסקאות (פלט) של כל העסק
+export function calcStateOutputVat(state: AppState, rate: number): number {
+  return vatComponent(calcStateVatableIncome(state), rate);
+}
+
+// מע"מ תשומות (קלט) של כל העסק
+export function calcStateInputVat(state: AppState, rate: number): number {
+  return vatComponent(calcStateVatableExpense(state), rate);
+}
+
+// מע"מ נטו לתשלום = עסקאות פחות תשומות
+export function calcStateNetVat(state: AppState, rate: number): number {
+  return calcStateOutputVat(state, rate) - calcStateInputVat(state, rate);
+}
+
+// רווח אחרי מע"מ = רווח ברוטו פחות מע"מ נטו (זהו בסיס המעשר)
+export function calcProfitAfterVat(state: AppState): number {
+  const rate = getVatRate(state.deductions);
+  return calcGrandTotalProfit(state) - calcStateNetVat(state, rate);
+}
+
+// הכנסות בלי מע"מ — לכל ההכנסות, בניכוי רכיב המע"מ מהחייבות
+export function calcGrandTotalIncomeExVat(state: AppState): number {
+  const rate = getVatRate(state.deductions);
+  return calcGrandTotalIncome(state) - calcStateOutputVat(state, rate);
+}
+
+// ניכויי מס שאינם מע"מ (מע"מ מטופל כשכבה אמיתית נפרדת)
+export function nonVatDeductions(deductions: Deduction[]): Deduction[] {
+  return deductions.filter(d => !d.name.includes('מע'));
+}
+
 export function calcDeductionAmount(profit: number, deduction: Deduction): number {
   if (!deduction.enabled) return 0;
   return Math.round(profit * (deduction.pct / 100));
@@ -109,16 +155,15 @@ export function calcNetProfit(profit: number, deductions: Deduction[]): number {
 }
 
 export function calcMaasarOwed(state: AppState): number {
-  const totalProfit = calcGrandTotalProfit(state);
-  const netProfit = calcNetProfit(totalProfit, state.deductions);
-  const maasarRequired = Math.round(netProfit * (state.maasarPct / 100));
+  const maasarRequired = calcMaasarRequired(state);
   const maasarPaid = calcMaasarPaid(state.maasarPayments);
   return Math.max(0, maasarRequired - maasarPaid);
 }
 
 export function calcMaasarRequired(state: AppState): number {
-  const totalProfit = calcGrandTotalProfit(state);
-  const netProfit = calcNetProfit(totalProfit, state.deductions);
+  // בסיס: רווח אחרי מע"מ, ואז ניכויי מס (ללא מע"מ), ואז מעשר
+  const profitAfterVat = calcProfitAfterVat(state);
+  const netProfit = calcNetProfit(profitAfterVat, nonVatDeductions(state.deductions));
   return Math.round(netProfit * (state.maasarPct / 100));
 }
 

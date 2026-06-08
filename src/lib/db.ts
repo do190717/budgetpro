@@ -69,9 +69,9 @@ export async function loadStateFromDB(): Promise<AppState> {
       businessSubtitle: settings?.business_subtitle || '',
       maasarPayments: (maasarPayments || []).map(p => ({ id: p.id, date: p.date, desc: p.description, amount: p.amount })),
       recurringPayments: (recurringPayments || []).map(r => ({ id: r.id, desc: r.description, amount: r.amount, dayOfMonth: r.day_of_month, lastRegistered: r.last_registered, enabled: r.enabled })),
-      generalIncome: (generalItems || []).filter(g => g.type === 'income').map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date })),
-      generalExpenseWork: (generalItems || []).filter(g => g.type === 'expense' && (g.expense_category === 'work' || !g.expense_category)).map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date })),
-      generalExpenseHome: (generalItems || []).filter(g => g.type === 'expense' && g.expense_category === 'home').map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date })),
+      generalIncome: (generalItems || []).filter(g => g.type === 'income').map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date, vatable: g.vatable ?? true })),
+      generalExpenseWork: (generalItems || []).filter(g => g.type === 'expense' && (g.expense_category === 'work' || !g.expense_category)).map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date, vatable: g.vatable ?? true })),
+      generalExpenseHome: (generalItems || []).filter(g => g.type === 'expense' && g.expense_category === 'home').map(g => ({ id: g.id, desc: g.description, amount: g.amount, note: g.note, date: g.date, vatable: g.vatable ?? true })),
       recurringGeneralItems: (recurringGeneralItems || []).map(r => ({ id: r.id, type: r.type, desc: r.description, amount: r.amount, dayOfMonth: r.day_of_month, lastRegistered: r.last_registered, enabled: r.enabled })),
     };
   } catch {
@@ -225,22 +225,31 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
   const dbType = type === 'income' ? 'income' : 'expense';
   const dbCategory = type === 'expenseWork' ? 'work' : type === 'expenseHome' ? 'home' : null;
 
-  let deleteQuery = supabase.from('general_items').delete().eq('user_id', user.id).eq('type', dbType);
-  if (dbCategory !== null) {
-    deleteQuery = deleteQuery.eq('expense_category', dbCategory);
-  }
-  await deleteQuery;
+  const rows = items.map((li, i) => ({
+    id: li.id, user_id: user.id, type: dbType,
+    expense_category: dbCategory,
+    description: li.desc, amount: li.amount,
+    note: li.note, date: li.date || '', sort_order: i,
+    vatable: li.vatable ?? true,
+  }));
 
-  if (items.length > 0) {
-    await supabase.from('general_items').insert(
-      items.map((li, i) => ({
-        id: li.id, user_id: user.id, type: dbType,
-        expense_category: dbCategory,
-        description: li.desc, amount: li.amount,
-        note: li.note, date: li.date || '', sort_order: i,
-      }))
-    );
+  // שומרים קודם (upsert) — ואם נכשל, לא ממשיכים למחיקה כדי לא לאבד נתונים
+  if (rows.length > 0) {
+    const { error } = await supabase.from('general_items').upsert(rows);
+    if (error) {
+      console.error('שמירת פריטים כלליים נכשלה — מדלגים על המחיקה:', error);
+      return;
+    }
   }
+
+  // מחיקת שורות ישנות מאותו סוג/קטגוריה שכבר אינן במצב הנוכחי
+  let del = supabase.from('general_items').delete().eq('user_id', user.id).eq('type', dbType);
+  if (dbCategory !== null) del = del.eq('expense_category', dbCategory);
+  const currentIds = rows.map(r => r.id);
+  if (currentIds.length > 0) {
+    del = del.not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
+  }
+  await del;
 }
 
 export async function saveRecurringGeneralItemToDB(item: RecurringGeneralItem): Promise<void> {

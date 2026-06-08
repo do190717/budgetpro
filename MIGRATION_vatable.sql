@@ -9,3 +9,7 @@ ALTER TABLE line_items
 -- טבלת הגיבוי מקבלת עותק מלא של line_items, לכן צריכה גם היא את העמודה.
 ALTER TABLE line_items_backup
   ADD COLUMN IF NOT EXISTS vatable boolean;
+
+-- שורות בטאב "כללי" (הכנסות / הוצאות עסקיות) — לחישוב מע"מ של כל העסק.
+ALTER TABLE general_items
+  ADD COLUMN IF NOT EXISTS vatable boolean NOT NULL DEFAULT true;

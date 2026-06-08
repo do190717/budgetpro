@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { AppState, Deduction, MaasarPayment, RecurringPayment } from '@/lib/types';
 import { generateId, updateDeductions, updateMaasarPct, addMaasarPayment, deleteMaasarPayment, addRecurringPayment, updateRecurringPayment, deleteRecurringPayment } from '@/lib/storage';
 import {
-  calcGrandTotalProfit,
   calcDeductionAmount,
   calcTotalDeductions,
   calcNetProfit,
@@ -13,6 +12,12 @@ import {
   calcMaasarOwed,
   formatCurrency,
   formatDate,
+  getVatRate,
+  calcStateOutputVat,
+  calcStateInputVat,
+  calcStateNetVat,
+  calcProfitAfterVat,
+  nonVatDeductions,
 } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
 
@@ -37,9 +42,14 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   const [recurringDay, setRecurringDay] = useState('1');
   const [confirmState, setConfirmState] = useState<{open: boolean, title: string, onConfirm: () => void}>({open: false, title: '', onConfirm: () => {}});
 
-  const totalProfit = calcGrandTotalProfit(state);
-  const totalDeductions = calcTotalDeductions(totalProfit, state.deductions);
-  const netProfit = calcNetProfit(totalProfit, state.deductions);
+  const vatRate = getVatRate(state.deductions);
+  const outputVat = calcStateOutputVat(state, vatRate);         // מע"מ עסקאות
+  const inputVat = calcStateInputVat(state, vatRate);           // מע"מ תשומות
+  const netVat = calcStateNetVat(state, vatRate);               // מע"מ לתשלום
+  const totalProfit = calcProfitAfterVat(state);               // רווח אחרי מע"מ — בסיס הניכויים והמעשר
+  const deductionsList = nonVatDeductions(state.deductions);    // ניכויי מס ללא מע"מ
+  const totalDeductions = calcTotalDeductions(totalProfit, deductionsList);
+  const netProfit = calcNetProfit(totalProfit, deductionsList);
   const maasarRequired = calcMaasarRequired(state);
   const maasarPaid = calcMaasarPaid(state.maasarPayments);
   const maasarOwed = calcMaasarOwed(state);
@@ -58,6 +68,14 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   };
 
   const handleUpdateMaasarPct = (pct: number) => { onStateChange(updateMaasarPct(state, pct)); };
+
+  const handleUpdateVatRate = (pct: number) => {
+    const hasVat = state.deductions.some(d => d.name.includes('מע'));
+    const updated = hasVat
+      ? state.deductions.map(d => d.name.includes('מע') ? { ...d, pct } : d)
+      : [...state.deductions, { id: generateId(), name: 'מע"מ', pct, enabled: false }];
+    onStateChange(updateDeductions(state, updated));
+  };
 
   const handleAddPayment = () => {
     if (!paymentDesc.trim() || !paymentAmount) return;
@@ -110,6 +128,34 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
   return (
     <div className="space-y-8">
       <section>
+        <h3 className="text-sm font-medium text-gray-500 mb-2">מע&quot;מ</h3>
+        <div className="border border-gray-300 rounded-xl overflow-hidden bg-white">
+          <div className="px-4 py-3 flex items-center justify-between" style={{ background: '#1E3A5F' }}>
+            <span className="font-semibold text-white">חישוב מע&quot;מ (רק שורות שסומנו חייבות)</span>
+            <div className="flex items-center gap-1">
+              <input type="number" value={vatRate} onChange={e => handleUpdateVatRate(parseFloat(e.target.value) || 0)}
+                className="text-center rounded bg-white" style={{ width: '48px', fontSize: '13px', padding: '3px 4px', border: 'none', outline: 'none' }} min="0" max="100" />
+              <span className="text-white text-sm">%</span>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            <div className="px-4 py-3 flex justify-between items-center text-sm">
+              <span className="text-gray-600">מע&quot;מ עסקאות (פלט)</span>
+              <span className="font-medium text-gray-800">{formatCurrency(outputVat)}</span>
+            </div>
+            <div className="px-4 py-3 flex justify-between items-center text-sm">
+              <span className="text-gray-600">מע&quot;מ תשומות (קלט)</span>
+              <span className="font-medium text-green-700">− {formatCurrency(inputVat)}</span>
+            </div>
+          </div>
+          <div className="px-4 py-4 flex justify-between items-center" style={{ background: netVat >= 0 ? '#FEF9E7' : '#EAF3DE' }}>
+            <span className="font-bold text-lg" style={{ color: netVat >= 0 ? '#B45309' : '#27500A' }}>{netVat >= 0 ? 'מע"מ לתשלום' : 'החזר מע"מ'}</span>
+            <span className="font-bold text-xl" style={{ color: netVat >= 0 ? '#B45309' : '#27500A' }}>{formatCurrency(Math.abs(netVat))}</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
         <h3 className="text-sm font-medium text-gray-500 mb-2">ניכויי מס</h3>
         <div className="border border-gray-300 rounded-xl overflow-hidden bg-white">
           <button onClick={() => setIsDeductionsOpen(!isDeductionsOpen)}
@@ -125,7 +171,7 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
 
           {!isDeductionsOpen && (
             <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ backgroundColor: '#F1EFE8' }}>
-              <span className="text-gray-600">רווח כולל: <span className="font-medium text-gray-800">{formatCurrency(totalProfit)}</span></span>
+              <span className="text-gray-600">רווח אחרי מע&quot;מ: <span className="font-medium text-gray-800">{formatCurrency(totalProfit)}</span></span>
               <span className="text-gray-600">ניכויים: <span className="font-medium text-gray-800">{formatCurrency(totalDeductions)}</span></span>
             </div>
           )}
@@ -134,13 +180,13 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
             <div className="divide-y divide-gray-200">
               <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: '#F1EFE8' }}>
                 <div>
-                  <span className="font-medium text-gray-800">רווח לפני ניכויים</span>
-                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>פרויקטים + כללי עסקי</div>
+                  <span className="font-medium text-gray-800">רווח אחרי מע&quot;מ</span>
+                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>בסיס לניכויים ולמעשר</div>
                 </div>
                 <span className="font-medium text-gray-800">{formatCurrency(totalProfit)}</span>
               </div>
 
-              {state.deductions.map(deduction => (
+              {deductionsList.map(deduction => (
                 <div key={deduction.id} className="flex items-center transition-colors"
                   style={{ backgroundColor: focusedDeductionId === deduction.id ? '#EEF4FF' : '#FAFAFA', padding: '0' }}
                   onFocus={() => setFocusedDeductionId(deduction.id)}

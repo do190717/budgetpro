@@ -14,6 +14,7 @@ import {
   calcGrandTotalIncome,
   calcGrandTotalExpense,
   calcGrandTotalProfit,
+  calcProfitAfterVat,
   getVatRate,
 } from '@/lib/calculations';
 import ProjectDetail from './ProjectDetail';
@@ -108,6 +109,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
   const grandIncome = calcGrandTotalIncome(state);
   const grandExpense = calcGrandTotalExpense(state);
   const grandProfit = calcGrandTotalProfit(state);
+  const profitAfterVat = calcProfitAfterVat(state);
   const projIncome = calcTotalIncome(state.projects);
   const projExpense = calcTotalExpense(state.projects);
   const projProfit = calcTotalProfit(state.projects);
@@ -138,16 +140,18 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '14px' }}>
           {[
-            { label: 'הכנסות', grand: grandIncome, proj: projIncome, color: '#9FE1CB' },
-            { label: 'הוצאות', grand: grandExpense, proj: projExpense, color: '#F5C4B3' },
-            { label: 'רווח', grand: grandProfit, proj: projProfit, color: grandProfit >= 0 ? '#9FE1CB' : '#F5C4B3' },
-          ].map(({ label, grand, proj, color }) => (
+            { label: 'הכנסות', grand: grandIncome, proj: projIncome, color: '#9FE1CB', vatSub: null as number | null },
+            { label: 'הוצאות', grand: grandExpense, proj: projExpense, color: '#F5C4B3', vatSub: null as number | null },
+            { label: 'רווח', grand: grandProfit, proj: projProfit, color: grandProfit >= 0 ? '#9FE1CB' : '#F5C4B3', vatSub: profitAfterVat as number | null },
+          ].map(({ label, grand, proj, color, vatSub }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginBottom: '3px' }}>{label}</div>
               <div style={{ color, fontSize: '20px', fontWeight: '500' }}>{fmt(grand)}</div>
-              {grand !== proj && (
+              {vatSub !== null && vatSub !== grand ? (
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '3px' }}>בלי מע&quot;מ {fmt(vatSub)}</div>
+              ) : grand !== proj ? (
                 <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginTop: '3px' }}>פרויקטים {fmt(proj)}</div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
