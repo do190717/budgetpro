@@ -168,9 +168,20 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
           </td>
           <td style={{ width: '42%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {item.vatable === false && (
-                <span style={{ fontSize: '9px', background: '#FEF3C7', color: '#92400E', padding: '1px 5px', borderRadius: '999px', flexShrink: 0, whiteSpace: 'nowrap' }}>פטור</span>
-              )}
+              <button
+                onClick={() => toggleVat(type, item.id)}
+                onMouseDown={e => e.stopPropagation()}
+                onTouchStart={e => e.stopPropagation()}
+                title={item.vatable === false ? 'פטור ממע"מ — לחץ כדי לסמן כחייב' : 'חייב במע"מ — לחץ כדי לסמן כפטור'}
+                style={{
+                  flexShrink: 0, cursor: 'pointer', border: 'none', borderRadius: '999px',
+                  fontSize: '9px', fontWeight: 600, padding: '2px 6px', whiteSpace: 'nowrap', lineHeight: 1.4,
+                  background: item.vatable === false ? '#FEF3C7' : '#D1FAE5',
+                  color: item.vatable === false ? '#92400E' : '#065F46',
+                }}
+              >
+                {item.vatable === false ? 'פטור' : 'מע"מ'}
+              </button>
               <input
                 type="text"
                 value={item.desc}
