@@ -14,6 +14,7 @@ import {
   calcGrandTotalIncome,
   calcGrandTotalExpense,
   calcGrandTotalProfit,
+  getVatRate,
 } from '@/lib/calculations';
 import ProjectDetail from './ProjectDetail';
 import FinanceTab from './FinanceTab';
@@ -96,6 +97,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
       return (
         <ProjectDetail
           project={current}
+          vatRate={getVatRate(state.deductions)}
           onBack={handleBack}
           onUpdate={handleProjectUpdate}
         />

@@ -7,6 +7,10 @@ import {
   calcProjectIncome,
   calcProjectExpense,
   calcProjectProfit,
+  calcProjectVatableIncome,
+  calcProjectOutputVat,
+  calcProjectInputVat,
+  calcProjectNetVat,
 } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
 
@@ -14,6 +18,7 @@ const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
 
 interface Props {
   project: Project;
+  vatRate: number;
   onBack: () => void;
   onUpdate: (project: Project) => void;
 }
@@ -28,7 +33,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: '14px',
 };
 
-export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
+export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Props) {
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
@@ -50,6 +55,12 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
   const expense = calcProjectExpense(project);
   const profit = calcProjectProfit(project);
 
+  // מע"מ
+  const vatableIncome = calcProjectVatableIncome(project);
+  const outputVat = calcProjectOutputVat(project, vatRate);
+  const inputVat = calcProjectInputVat(project, vatRate);
+  const netVat = calcProjectNetVat(project, vatRate);
+
   const toggleExpand = (itemId: string) => {
     setExpandedRows(prev => {
       const newSet = new Set(prev);
@@ -68,10 +79,19 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
     });
   };
 
+  const toggleVat = (type: 'income' | 'expense', itemId: string) => {
+    onUpdate({
+      ...project,
+      [type]: project[type].map(item =>
+        item.id === itemId ? { ...item, vatable: item.vatable === false } : item
+      ),
+    });
+  };
+
   const today = new Date().toISOString().split('T')[0];
 
   const addRow = (type: 'income' | 'expense') => {
-    const newItem: LineItem = { id: generateId(), desc: '', amount: 0, note: '', date: today };
+    const newItem: LineItem = { id: generateId(), desc: '', amount: 0, note: '', date: today, vatable: true };
     onUpdate({ ...project, [type]: [...project[type], newItem] });
   };
 
@@ -147,15 +167,20 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
             />
           </td>
           <td style={{ width: '42%' }}>
-            <input
-              type="text"
-              value={item.desc}
-              onChange={(e) => updateItem(type, item.id, 'desc', e.target.value)}
-              placeholder="תיאור..."
-              style={inputStyle}
-              onMouseDown={e => e.stopPropagation()}
-              onTouchStart={e => e.stopPropagation()}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {item.vatable === false && (
+                <span style={{ fontSize: '9px', background: '#FEF3C7', color: '#92400E', padding: '1px 5px', borderRadius: '999px', flexShrink: 0, whiteSpace: 'nowrap' }}>פטור</span>
+              )}
+              <input
+                type="text"
+                value={item.desc}
+                onChange={(e) => updateItem(type, item.id, 'desc', e.target.value)}
+                placeholder="תיאור..."
+                style={inputStyle}
+                onMouseDown={e => e.stopPropagation()}
+                onTouchStart={e => e.stopPropagation()}
+              />
+            </div>
           </td>
           <td style={{ width: '22%' }}>
             <input
@@ -203,13 +228,22 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
       if (isExpanded) {
         rows.push(
           <tr key={`${item.id}-note`} style={{ backgroundColor: '#F1EFE8' }}>
-            <td colSpan={5} style={{ padding: '0' }}>
+            <td colSpan={5} style={{ padding: '8px 14px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#555', marginBottom: '6px' }}>
+                <input
+                  type="checkbox"
+                  checked={item.vatable !== false}
+                  onChange={() => toggleVat(type, item.id)}
+                  style={{ width: '15px', height: '15px', accentColor: '#1D9E75', cursor: 'pointer', flexShrink: 0 }}
+                />
+                חייב במע&quot;מ <span style={{ color: '#9CA3AF' }}>{item.vatable === false ? '(פטור — נרשם ללא מע"מ)' : '(נרשם כולל מע"מ)'}</span>
+              </label>
               <input
                 type="text"
                 value={item.note}
                 onChange={(e) => updateItem(type, item.id, 'note', e.target.value)}
                 placeholder="הערה חופשית..."
-                style={{ ...inputStyle, padding: '10px 14px', fontSize: '13px', color: '#555' }}
+                style={{ ...inputStyle, padding: '6px 0', fontSize: '13px', color: '#555' }}
               />
             </td>
           </tr>
@@ -364,6 +398,31 @@ export default function ProjectDetail({ project, onBack, onUpdate }: Props) {
       <div style={{ padding: '12px 0' }}>
         {tableSection('income')}
         {tableSection('expense')}
+
+        {/* סיכום מע"מ */}
+        <section style={{ margin: '0 12px 12px' }}>
+          <div style={{ border: '1px solid #E5E7EB', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ background: '#1E3A5F', padding: '9px 12px', color: '#fff', fontSize: '13px', fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
+              <span>מע&quot;מ</span>
+              <span style={{ opacity: 0.7, fontSize: '12px' }}>{vatRate}%</span>
+            </div>
+            <div style={{ background: '#fff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: '#374151', borderBottom: '1px solid #F3F4F6' }}>
+                <span>הכנסות חייבות מע&quot;מ</span><span style={{ fontWeight: 500 }}>{fmt(vatableIncome)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: '#374151', borderBottom: '1px solid #F3F4F6' }}>
+                <span>מע&quot;מ עסקאות (פלט)</span><span style={{ fontWeight: 500 }}>{fmt(outputVat)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: '#374151', borderBottom: '1px solid #F3F4F6' }}>
+                <span>מע&quot;מ תשומות (קלט)</span><span style={{ fontWeight: 500, color: '#059669' }}>− {fmt(inputVat)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 14px', background: netVat >= 0 ? '#FEF9E7' : '#EAF3DE' }}>
+                <span style={{ fontWeight: 700, color: netVat >= 0 ? '#B45309' : '#27500A' }}>{netVat >= 0 ? 'מע"מ לתשלום' : 'החזר מע"מ'}</span>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: netVat >= 0 ? '#B45309' : '#27500A' }}>{fmt(Math.abs(netVat))}</span>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <ConfirmModal

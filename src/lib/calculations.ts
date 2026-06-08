@@ -12,6 +12,44 @@ export function calcProjectProfit(project: Project): number {
   return calcProjectIncome(project) - calcProjectExpense(project);
 }
 
+// שורה נחשבת חייבת במע"מ אלא אם סומנה במפורש כפטורה
+export function isVatable(item: LineItem): boolean {
+  return item.vatable !== false;
+}
+
+// רכיב המע"מ בתוך סכום שנרשם כולל מע"מ (למשל 1180 ב-18% => 180)
+export function vatComponent(amountInclVat: number, rate: number): number {
+  if (rate <= 0) return 0;
+  return Math.round(amountInclVat * (rate / (100 + rate)));
+}
+
+// בסיס המע"מ של פרויקט — רק שורות הכנסה חייבות (כולל מע"מ)
+export function calcProjectVatableIncome(project: Project): number {
+  return project.income.filter(isVatable).reduce((sum, item) => sum + item.amount, 0);
+}
+
+// מע"מ עסקאות (פלט) — מתוך ההכנסות החייבות
+export function calcProjectOutputVat(project: Project, rate: number): number {
+  return vatComponent(calcProjectVatableIncome(project), rate);
+}
+
+// מע"מ תשומות (קלט) — מתוך ההוצאות החייבות
+export function calcProjectInputVat(project: Project, rate: number): number {
+  const vatableExpense = project.expense.filter(isVatable).reduce((sum, item) => sum + item.amount, 0);
+  return vatComponent(vatableExpense, rate);
+}
+
+// מע"מ לתשלום של הפרויקט = עסקאות פחות תשומות
+export function calcProjectNetVat(project: Project, rate: number): number {
+  return calcProjectOutputVat(project, rate) - calcProjectInputVat(project, rate);
+}
+
+// שיעור המע"מ המוגדר ע"י המשתמש (מתוך הניכוי "מעמ"), ברירת מחדל 18
+export function getVatRate(deductions: Deduction[]): number {
+  const vatDeduction = deductions.find(d => d.name.includes('מע'));
+  return vatDeduction ? vatDeduction.pct : 18;
+}
+
 export function calcTotalIncome(projects: Project[]): number {
   return projects.reduce((sum, p) => sum + calcProjectIncome(p), 0);
 }

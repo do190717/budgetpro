@@ -5,6 +5,9 @@ export interface LineItem {
   note: string;
   date: string;
   expenseCategory?: 'work' | 'home';
+  // האם השורה חייבת במע"מ. ברירת מחדל true. false = פטור/0% (עוסק פטור, יצוא, עסקה פטורה).
+  // שורה חייבת נרשמת כולל מע"מ; שורה פטורה ללא.
+  vatable?: boolean;
 }
 
 export interface Project {

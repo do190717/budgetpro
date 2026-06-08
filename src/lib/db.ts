@@ -53,10 +53,10 @@ export async function loadStateFromDB(): Promise<AppState> {
       endDate: p.end_date || '',
       income: (lineItems || [])
         .filter(li => li.project_id === p.id && li.type === 'income')
-        .map(li => ({ id: li.id, desc: li.description, amount: li.amount, note: li.note, date: li.date })),
+        .map(li => ({ id: li.id, desc: li.description, amount: li.amount, note: li.note, date: li.date, vatable: li.vatable ?? true })),
       expense: (lineItems || [])
         .filter(li => li.project_id === p.id && li.type === 'expense')
-        .map(li => ({ id: li.id, desc: li.description, amount: li.amount, note: li.note, date: li.date })),
+        .map(li => ({ id: li.id, desc: li.description, amount: li.amount, note: li.note, date: li.date, vatable: li.vatable ?? true })),
     }));
 
     return {
@@ -117,10 +117,12 @@ export async function saveProjectToDB(project: Project): Promise<void> {
     ...project.income.map((li, i) => ({
       id: li.id, project_id: project.id, type: 'income',
       description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i,
+      vatable: li.vatable ?? true,
     })),
     ...project.expense.map((li, i) => ({
       id: li.id, project_id: project.id, type: 'expense',
       description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i,
+      vatable: li.vatable ?? true,
     })),
   ];
 
