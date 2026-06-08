@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Project, LineItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
 import { deleteLineItemFromDB } from '@/lib/db';
+import { colors } from '@/lib/theme';
 import {
   calcProjectIncome,
   calcProjectExpense,
@@ -112,7 +113,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
     if (items.length === 0) {
       return (
         <tr>
-          <td colSpan={5} style={{ textAlign: 'center', color: '#9CA3AF', padding: '24px' }}>
+          <td colSpan={5} style={{ textAlign: 'center', color: colors.gray400, padding: '24px' }}>
             אין {type === 'income' ? 'הכנסות' : 'הוצאות'} עדיין
           </td>
         </tr>
@@ -145,7 +146,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
         <tr
           key={item.id}
           style={{
-            backgroundColor: focusedRowId === item.id ? '#EEF4FF' : index % 2 === 0 ? '#FFFFFF' : zebraColor,
+            backgroundColor: focusedRowId === item.id ? colors.focusBg : index % 2 === 0 ? colors.white : zebraColor,
             userSelect: 'none',
           }}
           onFocus={() => setFocusedRowId(item.id)}
@@ -164,7 +165,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
               onChange={e => updateItem(type, item.id, 'date', e.target.value)}
               onMouseDown={e => e.stopPropagation()}
               onTouchStart={e => e.stopPropagation()}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', color: item.date ? '#374151' : '#9CA3AF', direction: 'ltr', width: '100%', cursor: 'pointer', padding: '4px 2px' }}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', color: item.date ? colors.gray700 : colors.gray400, direction: 'ltr', width: '100%', cursor: 'pointer', padding: '4px 2px' }}
               title={item.date ? fmtShort(item.date) : 'בחר תאריך'}
             />
           </td>
@@ -178,8 +179,8 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
                 style={{
                   flexShrink: 0, cursor: 'pointer', border: 'none', borderRadius: '999px',
                   fontSize: '9px', fontWeight: 600, padding: '2px 6px', whiteSpace: 'nowrap', lineHeight: 1.4,
-                  background: item.vatable === false ? '#FEF3C7' : '#D1FAE5',
-                  color: item.vatable === false ? '#92400E' : '#065F46',
+                  background: item.vatable === false ? colors.amberChip : colors.greenChip,
+                  color: item.vatable === false ? colors.amberText : colors.greenDeep,
                 }}
               >
                 {item.vatable === false ? 'פטור' : 'מע"מ'}
@@ -211,7 +212,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
               onClick={() => toggleExpand(item.id)}
               onMouseDown={e => e.stopPropagation()}
               onTouchStart={e => e.stopPropagation()}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: hasNote ? '#2563EB' : '#9CA3AF', padding: '8px' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: hasNote ? colors.blue : colors.gray400, padding: '8px' }}
             >
               {isExpanded ? '▲' : '▼'}
             </button>
@@ -229,7 +230,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
                   });
                 }}
                 onMouseDown={e => e.stopPropagation()}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '6px', fontSize: '14px' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.redStrong, padding: '6px', fontSize: '14px' }}
               >
                 ✕
               </button>
@@ -240,23 +241,23 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
 
       if (isExpanded) {
         rows.push(
-          <tr key={`${item.id}-note`} style={{ backgroundColor: '#F1EFE8' }}>
+          <tr key={`${item.id}-note`} style={{ backgroundColor: colors.cream }}>
             <td colSpan={5} style={{ padding: '8px 14px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#555', marginBottom: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: colors.noteText, marginBottom: '6px' }}>
                 <input
                   type="checkbox"
                   checked={item.vatable !== false}
                   onChange={() => toggleVat(type, item.id)}
-                  style={{ width: '15px', height: '15px', accentColor: '#1D9E75', cursor: 'pointer', flexShrink: 0 }}
+                  style={{ width: '15px', height: '15px', accentColor: colors.green, cursor: 'pointer', flexShrink: 0 }}
                 />
-                חייב במע&quot;מ <span style={{ color: '#9CA3AF' }}>{item.vatable === false ? '(פטור — נרשם ללא מע"מ)' : '(נרשם כולל מע"מ)'}</span>
+                חייב במע&quot;מ <span style={{ color: colors.gray400 }}>{item.vatable === false ? '(פטור — נרשם ללא מע"מ)' : '(נרשם כולל מע"מ)'}</span>
               </label>
               <input
                 type="text"
                 value={item.note}
                 onChange={(e) => updateItem(type, item.id, 'note', e.target.value)}
                 placeholder="הערה חופשית..."
-                style={{ ...inputStyle, padding: '6px 0', fontSize: '13px', color: '#555' }}
+                style={{ ...inputStyle, padding: '6px 0', fontSize: '13px', color: colors.noteText }}
               />
             </td>
           </tr>
@@ -273,28 +274,28 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
     const items = getSortedItems(rawItems, type);
     const isSorted = sortedTypes.has(type);
     const total = isIncome ? income : expense;
-    const headerBg = isIncome ? '#1D9E75' : '#D85A30';
-    const summaryBg = isIncome ? '#EAF3DE' : '#FAECE7';
-    const summaryColor = isIncome ? '#27500A' : '#712B13';
-    const zebraColor = isIncome ? '#F8FFF8' : '#FFF8F8';
+    const headerBg = isIncome ? colors.green : colors.orange;
+    const summaryBg = isIncome ? colors.greenBg : colors.orangeBg;
+    const summaryColor = isIncome ? colors.greenLabel : colors.orangeText;
+    const zebraColor = isIncome ? colors.zebraIncome : colors.zebraExpense;
     const label = isIncome ? 'הכנסות' : 'הוצאות';
 
     return (
       <section style={{ marginBottom: '12px' }}>
-        <div style={{ borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', overflow: 'hidden' }}>
+        <div style={{ borderTop: `1px solid ${colors.gray200}`, borderBottom: `1px solid ${colors.gray200}`, overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: headerBg, padding: '10px 12px' }}>
-            <span style={{ color: '#fff', fontWeight: '500', fontSize: '15px' }}>{label}</span>
+            <span style={{ color: colors.white, fontWeight: '500', fontSize: '15px' }}>{label}</span>
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
                 onClick={() => toggleSort(type)}
-                style={{ background: isSorted ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '11px', padding: '4px 8px', cursor: 'pointer' }}
+                style={{ background: isSorted ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '4px', color: colors.white, fontSize: '11px', padding: '4px 8px', cursor: 'pointer' }}
                 title="מיין לפי תאריך"
               >
                 {isSorted ? '↑ תאריך' : '⇅ מיין'}
               </button>
               <button
                 onClick={() => addRow(type)}
-                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', color: colors.white, fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}
               >
                 + הוסף
               </button>
@@ -303,7 +304,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
 
           <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: '#F9FAFB', fontSize: '12px', color: '#6B7280' }}>
+              <tr style={{ background: colors.gray50, fontSize: '12px', color: colors.gray500 }}>
                 <th className="date-col" style={{ width: '18%', padding: '8px 4px', textAlign: 'center', fontWeight: 500 }}>תאריך</th>
                 <th style={{ width: '42%', padding: '8px', textAlign: 'right', fontWeight: 500 }}>תיאור</th>
                 <th style={{ width: '22%', padding: '8px', textAlign: 'right', fontWeight: 500 }}>סכום ₪</th>
@@ -326,7 +327,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
   };
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', direction: 'rtl', minHeight: '100vh', background: '#F9FAFB' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', direction: 'rtl', minHeight: '100vh', background: colors.gray50 }}>
       <style>{`
         @media (max-width: 400px) {
           .date-col { width: 32px !important; padding: 0 !important; }
@@ -338,7 +339,7 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
       `}</style>
 
       {/* Header */}
-      <div style={{ background: '#1E3A5F', padding: '14px 16px 12px' }}>
+      <div style={{ background: colors.navy, padding: '14px 16px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ textAlign: 'right' }}>
             {editingName ? (
@@ -352,12 +353,12 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
                   if (e.key === 'Enter') { if (nameValue.trim()) onUpdate({ ...project, name: nameValue.trim() }); setEditingName(false); }
                   if (e.key === 'Escape') { setNameValue(project.name); setEditingName(false); }
                 }}
-                style={{ background: 'transparent', border: 'none', borderBottom: '2px solid rgba(255,255,255,0.5)', color: '#fff', fontSize: '17px', fontWeight: '500', outline: 'none', direction: 'rtl', width: '100%' }}
+                style={{ background: 'transparent', border: 'none', borderBottom: '2px solid rgba(255,255,255,0.5)', color: colors.white, fontSize: '17px', fontWeight: '500', outline: 'none', direction: 'rtl', width: '100%' }}
               />
             ) : (
               <div
                 onClick={() => { setEditingName(true); setNameValue(project.name); }}
-                style={{ color: '#fff', fontSize: '17px', fontWeight: '500', cursor: 'text' }}
+                style={{ color: colors.white, fontSize: '17px', fontWeight: '500', cursor: 'text' }}
                 title="לחץ לעריכת שם"
               >
                 {project.name} <span style={{ fontSize: '11px', opacity: 0.4 }}>✎</span>
@@ -380,14 +381,14 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
                   type="date"
                   value={project.endDate || ''}
                   onChange={(e) => handleDateChange('endDate', e.target.value)}
-                  style={{ background: 'transparent', border: 'none', color: project.endDate ? 'rgba(255,255,255,0.8)' : '#FCD34D', fontSize: '11px', direction: 'ltr', cursor: 'pointer', outline: 'none' }}
+                  style={{ background: 'transparent', border: 'none', color: project.endDate ? 'rgba(255,255,255,0.8)' : colors.yellow, fontSize: '11px', direction: 'ltr', cursor: 'pointer', outline: 'none' }}
                 />
               </div>
             </div>
           </div>
           <button
             onClick={onBack}
-            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', color: colors.white, padding: '6px 12px', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             ← חזור
           </button>
@@ -395,9 +396,9 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px' }}>
           {[
-            { label: 'הכנסות', value: income, color: '#9FE1CB' },
-            { label: 'הוצאות', value: expense, color: '#F5C4B3' },
-            { label: 'רווח', value: profit, color: profit >= 0 ? '#9FE1CB' : '#F5C4B3' },
+            { label: 'הכנסות', value: income, color: colors.mintKpi },
+            { label: 'הוצאות', value: expense, color: colors.peachKpi },
+            { label: 'רווח', value: profit, color: profit >= 0 ? colors.mintKpi : colors.peachKpi },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginBottom: '3px' }}>{label}</div>
@@ -414,24 +415,24 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
 
         {/* סיכום מע"מ */}
         <section style={{ margin: '0 12px 12px' }}>
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '10px', overflow: 'hidden' }}>
-            <div style={{ background: '#1E3A5F', padding: '9px 12px', color: '#fff', fontSize: '13px', fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ border: `1px solid ${colors.gray200}`, borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ background: colors.navy, padding: '9px 12px', color: colors.white, fontSize: '13px', fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
               <span>מע&quot;מ</span>
               <span style={{ opacity: 0.7, fontSize: '12px' }}>{vatRate}%</span>
             </div>
-            <div style={{ background: '#fff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: '#374151', borderBottom: '1px solid #F3F4F6' }}>
+            <div style={{ background: colors.white }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: colors.gray700, borderBottom: `1px solid ${colors.gray100}` }}>
                 <span>הכנסות חייבות מע&quot;מ</span><span style={{ fontWeight: 500 }}>{fmt(vatableIncome)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: '#374151', borderBottom: '1px solid #F3F4F6' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: colors.gray700, borderBottom: `1px solid ${colors.gray100}` }}>
                 <span>מע&quot;מ עסקאות (פלט)</span><span style={{ fontWeight: 500 }}>{fmt(outputVat)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: '#374151', borderBottom: '1px solid #F3F4F6' }}>
-                <span>מע&quot;מ תשומות (קלט)</span><span style={{ fontWeight: 500, color: '#059669' }}>− {fmt(inputVat)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', fontSize: '13px', color: colors.gray700, borderBottom: `1px solid ${colors.gray100}` }}>
+                <span>מע&quot;מ תשומות (קלט)</span><span style={{ fontWeight: 500, color: colors.greenText }}>− {fmt(inputVat)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 14px', background: netVat >= 0 ? '#FEF9E7' : '#EAF3DE' }}>
-                <span style={{ fontWeight: 700, color: netVat >= 0 ? '#B45309' : '#27500A' }}>{netVat >= 0 ? 'מע"מ לתשלום' : 'החזר מע"מ'}</span>
-                <span style={{ fontWeight: 700, fontSize: '16px', color: netVat >= 0 ? '#B45309' : '#27500A' }}>{fmt(Math.abs(netVat))}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 14px', background: netVat >= 0 ? colors.amberBg : colors.greenBg }}>
+                <span style={{ fontWeight: 700, color: netVat >= 0 ? colors.amber : colors.greenLabel }}>{netVat >= 0 ? 'מע"מ לתשלום' : 'החזר מע"מ'}</span>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: netVat >= 0 ? colors.amber : colors.greenLabel }}>{fmt(Math.abs(netVat))}</span>
               </div>
             </div>
           </div>

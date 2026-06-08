@@ -20,6 +20,7 @@ export const colors = {
   greenDeep: '#065F46',
   greenLabel: '#27500A',
   greenBg: '#EAF3DE',
+  greenChip: '#D1FAE5',   // רקע צ'יפ "מע"מ"
   mintKpi: '#9FE1CB',     // צבע KPI חיובי על רקע navy
 
   // הוצאות / שלילי
@@ -39,6 +40,7 @@ export const colors = {
   purpleBg: '#EDE9FE',
 
   // מעשר / ענבר
+  yellow: '#FCD34D',      // אזהרת תאריך סיום חסר
   amber: '#B45309',
   amberText: '#92400E',
   amberBg: '#FEF9E7',
@@ -57,6 +59,9 @@ export const colors = {
 
   // רקעים מיוחדים
   cream: '#F1EFE8',       // שורת הערה
+  noteText: '#555',       // טקסט הערה
+  zebraIncome: '#F8FFF8', // פס זברה לטבלת הכנסות
+  zebraExpense: '#FFF8F8',// פס זברה לטבלת הוצאות
   focusBg: '#EEF4FF',
   white: '#FFFFFF',
   overlay: 'rgba(0,0,0,0.45)', // רקע כהה של מודאלים
