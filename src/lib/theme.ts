@@ -21,6 +21,7 @@ export const colors = {
   greenLabel: '#27500A',
   greenBg: '#EAF3DE',
   greenChip: '#D1FAE5',   // רקע צ'יפ "מע"מ"
+  greenBgSoft: '#F0FDF4', // רקע רווח עסקי חיובי
   mintKpi: '#9FE1CB',     // צבע KPI חיובי על רקע navy
 
   // הוצאות / שלילי
@@ -38,6 +39,8 @@ export const colors = {
   purple: '#7C3AED',
   purpleDeep: '#4C1D95',
   purpleBg: '#EDE9FE',
+  purpleBgSoft: '#F5F3FF', // רקע יתרה לבית חיובית
+  zebraHome: '#FAF8FF',    // פס זברה לטבלת הוצאות ביתיות
 
   // מעשר / ענבר
   yellow: '#FCD34D',      // אזהרת תאריך סיום חסר
