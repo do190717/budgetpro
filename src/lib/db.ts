@@ -219,6 +219,21 @@ export async function deleteRecurringPaymentFromDB(id: string): Promise<void> {
   await supabase.from('recurring_payments').delete().eq('id', id);
 }
 
+// גיבוי פריטים כלליים לפני מחיקה — רשת ביטחון מקבילה לזו של הפרויקטים
+async function backupGeneralItems(userId: string, dbType: string, dbCategory: string | null): Promise<void> {
+  try {
+    let q = supabase.from('general_items').select('*').eq('user_id', userId).eq('type', dbType);
+    if (dbCategory !== null) q = q.eq('expense_category', dbCategory);
+    const { data: items } = await q;
+    if (!items || items.length === 0) return;
+    await supabase.from('general_items_backup').insert(
+      items.map(item => ({ ...item, backed_up_at: new Date().toISOString(), backed_up_by: userId }))
+    );
+  } catch {
+    // גיבוי נכשל — ממשיכים
+  }
+}
+
 export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | 'expenseWork' | 'expenseHome'): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
@@ -232,6 +247,20 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
     note: li.note, date: li.date || '', sort_order: i,
     vatable: li.vatable ?? true,
   }));
+
+  // כמה שורות קיימות ב-DB לקטגוריה הזו
+  let countQ = supabase.from('general_items').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('type', dbType);
+  if (dbCategory !== null) countQ = countQ.eq('expense_category', dbCategory);
+  const { count: existingCount } = await countQ;
+
+  // 🛡️ הגנה: רשימה ריקה מול נתונים קיימים = כנראה מצב חלקי/שגוי — אל תמחק הכל
+  if (rows.length === 0 && (existingCount ?? 0) > 1) {
+    console.warn('דילוג על מחיקת general_items — רשימה ריקה מול נתונים קיימים ב-DB');
+    return;
+  }
+
+  // 🛟 גיבוי לפני כל מחיקה
+  await backupGeneralItems(user.id, dbType, dbCategory);
 
   // שומרים קודם (upsert) — ואם נכשל, לא ממשיכים למחיקה כדי לא לאבד נתונים
   if (rows.length > 0) {
