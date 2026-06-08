@@ -33,7 +33,9 @@ export const colors = {
   redBorder: '#FCA5A5',
   redStrong: '#EF4444',
   redDeep: '#991B1B',
+  redText: '#A32D2D',     // טקסט יתרת חוב
   redBg: '#FEF2F2',
+  redBgSoft: '#FCEBEB',   // רקע יתרת חוב
 
   // ביתי (סגול)
   purple: '#7C3AED',
@@ -47,6 +49,7 @@ export const colors = {
   amber: '#B45309',
   amberText: '#92400E',
   amberBg: '#FEF9E7',
+  amberBgDeep: '#FAEEDA', // רקע סה"כ חייב במעשר
   amberChip: '#FEF3C7',
 
   // אפורים (סקאלה)
@@ -59,6 +62,7 @@ export const colors = {
   gray200: '#E5E7EB',
   gray100: '#F3F4F6',
   gray50: '#F9FAFB',
+  offWhite: '#FAFAFA',    // רקע שורת ניכוי
 
   // רקעים מיוחדים
   cream: '#F1EFE8',       // שורת הערה

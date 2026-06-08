@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AppState, Deduction, MaasarPayment, RecurringPayment } from '@/lib/types';
 import { generateId, updateDeductions, updateMaasarPct, addMaasarPayment, deleteMaasarPayment, addRecurringPayment, updateRecurringPayment, deleteRecurringPayment } from '@/lib/storage';
 import { deleteDeductionFromDB } from '@/lib/db';
+import { colors } from '@/lib/theme';
 import {
   calcDeductionAmount,
   calcTotalDeductions,
@@ -133,7 +134,7 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
       <section>
         <h3 className="text-sm font-medium text-gray-500 mb-2">מע&quot;מ</h3>
         <div className="border border-gray-300 rounded-xl overflow-hidden bg-white">
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: '#1E3A5F' }}>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ background: colors.navy }}>
             <span className="font-semibold text-white">חישוב מע&quot;מ (רק שורות שסומנו חייבות)</span>
             <div className="flex items-center gap-1">
               <input type="number" value={vatRate} onChange={e => handleUpdateVatRate(parseFloat(e.target.value) || 0)}
@@ -151,9 +152,9 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
               <span className="font-medium text-green-700">− {formatCurrency(inputVat)}</span>
             </div>
           </div>
-          <div className="px-4 py-4 flex justify-between items-center" style={{ background: netVat >= 0 ? '#FEF9E7' : '#EAF3DE' }}>
-            <span className="font-bold text-lg" style={{ color: netVat >= 0 ? '#B45309' : '#27500A' }}>{netVat >= 0 ? 'מע"מ לתשלום' : 'החזר מע"מ'}</span>
-            <span className="font-bold text-xl" style={{ color: netVat >= 0 ? '#B45309' : '#27500A' }}>{formatCurrency(Math.abs(netVat))}</span>
+          <div className="px-4 py-4 flex justify-between items-center" style={{ background: netVat >= 0 ? colors.amberBg : colors.greenBg }}>
+            <span className="font-bold text-lg" style={{ color: netVat >= 0 ? colors.amber : colors.greenLabel }}>{netVat >= 0 ? 'מע"מ לתשלום' : 'החזר מע"מ'}</span>
+            <span className="font-bold text-xl" style={{ color: netVat >= 0 ? colors.amber : colors.greenLabel }}>{formatCurrency(Math.abs(netVat))}</span>
           </div>
         </div>
       </section>
@@ -173,7 +174,7 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
           </button>
 
           {!isDeductionsOpen && (
-            <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ backgroundColor: '#F1EFE8' }}>
+            <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ backgroundColor: colors.cream }}>
               <span className="text-gray-600">רווח אחרי מע&quot;מ: <span className="font-medium text-gray-800">{formatCurrency(totalProfit)}</span></span>
               <span className="text-gray-600">ניכויים: <span className="font-medium text-gray-800">{formatCurrency(totalDeductions)}</span></span>
             </div>
@@ -181,17 +182,17 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
 
           <div style={{ maxHeight: isDeductionsOpen ? '1000px' : '0px', overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
             <div className="divide-y divide-gray-200">
-              <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: '#F1EFE8' }}>
+              <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: colors.cream }}>
                 <div>
                   <span className="font-medium text-gray-800">רווח אחרי מע&quot;מ</span>
-                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>בסיס לניכויים ולמעשר</div>
+                  <div style={{ fontSize: '11px', color: colors.gray500, marginTop: '1px' }}>בסיס לניכויים ולמעשר</div>
                 </div>
                 <span className="font-medium text-gray-800">{formatCurrency(totalProfit)}</span>
               </div>
 
               {deductionsList.map(deduction => (
                 <div key={deduction.id} className="flex items-center transition-colors"
-                  style={{ backgroundColor: focusedDeductionId === deduction.id ? '#EEF4FF' : '#FAFAFA', padding: '0' }}
+                  style={{ backgroundColor: focusedDeductionId === deduction.id ? colors.focusBg : colors.offWhite, padding: '0' }}
                   onFocus={() => setFocusedDeductionId(deduction.id)}
                   onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocusedDeductionId(null); }}>
                   <div className="flex-shrink-0 px-2 sm:px-3">
@@ -228,11 +229,11 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
           <div className="px-4 py-4 flex items-center justify-between border-b border-amber-200 bg-amber-50/50">
             <div>
               <span className="font-medium text-amber-800">יתרה לאחר ניכויים</span>
-              <div style={{ fontSize: '11px', color: '#92400E', marginTop: '1px' }}>בסיס לחישוב מעשר</div>
+              <div style={{ fontSize: '11px', color: colors.amberText, marginTop: '1px' }}>בסיס לחישוב מעשר</div>
             </div>
             <span className="font-bold text-amber-900 text-lg">{formatCurrency(netProfit)}</span>
           </div>
-          <div className="px-4 py-4 flex items-center justify-between border-b border-amber-200" style={{ backgroundColor: '#FEF9E7' }}>
+          <div className="px-4 py-4 flex items-center justify-between border-b border-amber-200" style={{ backgroundColor: colors.amberBg }}>
             <span className="font-medium text-amber-800">אחוז מעשר</span>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
@@ -243,9 +244,9 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
               <span className="text-amber-700 font-medium">= {formatCurrency(maasarRequired)}</span>
             </div>
           </div>
-          <div className="px-4 py-5 flex justify-between items-center" style={{ backgroundColor: '#FAEEDA' }}>
-            <span className="font-bold text-lg" style={{ color: '#B45309' }}>סה״כ חייב במעשר</span>
-            <span className="font-bold text-xl" style={{ color: '#B45309' }}>{formatCurrency(maasarRequired)}</span>
+          <div className="px-4 py-5 flex justify-between items-center" style={{ backgroundColor: colors.amberBgDeep }}>
+            <span className="font-bold text-lg" style={{ color: colors.amber }}>סה״כ חייב במעשר</span>
+            <span className="font-bold text-xl" style={{ color: colors.amber }}>{formatCurrency(maasarRequired)}</span>
           </div>
         </div>
       </section>
@@ -265,19 +266,19 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
               <div className="text-sm font-medium text-gray-700 mb-3 text-right">בחר סוג הפרשה:</div>
               <div className="flex gap-3">
                 <button onClick={() => { setAddMode('single'); setIsAddingPayment(true); }}
-                  style={{ flex: 1, background: '#fff', border: '2px solid #1D9E75', borderRadius: '10px', padding: '14px 8px', cursor: 'pointer', textAlign: 'center' }}>
+                  style={{ flex: 1, background: colors.white, border: '2px solid #1D9E75', borderRadius: '10px', padding: '14px 8px', cursor: 'pointer', textAlign: 'center' }}>
                   <div style={{ fontSize: '22px', marginBottom: '6px' }}>💸</div>
-                  <div style={{ fontWeight: '500', color: '#1D9E75', fontSize: '14px' }}>חד פעמית</div>
-                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>הפרשה בתאריך מסוים</div>
+                  <div style={{ fontWeight: '500', color: colors.green, fontSize: '14px' }}>חד פעמית</div>
+                  <div style={{ fontSize: '11px', color: colors.gray500, marginTop: '2px' }}>הפרשה בתאריך מסוים</div>
                 </button>
                 <button onClick={() => setAddMode('recurring')}
-                  style={{ flex: 1, background: '#fff', border: '2px solid #2563EB', borderRadius: '10px', padding: '14px 8px', cursor: 'pointer', textAlign: 'center' }}>
+                  style={{ flex: 1, background: colors.white, border: '2px solid #2563EB', borderRadius: '10px', padding: '14px 8px', cursor: 'pointer', textAlign: 'center' }}>
                   <div style={{ fontSize: '22px', marginBottom: '6px' }}>🔁</div>
-                  <div style={{ fontWeight: '500', color: '#2563EB', fontSize: '14px' }}>קבועה חוזרת</div>
-                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>נרשמת כל חודש אוטומטית</div>
+                  <div style={{ fontWeight: '500', color: colors.blue, fontSize: '14px' }}>קבועה חוזרת</div>
+                  <div style={{ fontSize: '11px', color: colors.gray500, marginTop: '2px' }}>נרשמת כל חודש אוטומטית</div>
                 </button>
               </div>
-              <button onClick={() => setAddMode(null)} style={{ marginTop: '10px', background: 'none', border: 'none', color: '#6B7280', fontSize: '13px', cursor: 'pointer', width: '100%', textAlign: 'center' }}>ביטול</button>
+              <button onClick={() => setAddMode(null)} style={{ marginTop: '10px', background: 'none', border: 'none', color: colors.gray500, fontSize: '13px', cursor: 'pointer', width: '100%', textAlign: 'center' }}>ביטול</button>
             </div>
           )}
 
@@ -301,7 +302,7 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
           )}
 
           {addMode === 'recurring' && (
-            <div className="p-4 border-b" style={{ background: '#EFF6FF' }}>
+            <div className="p-4 border-b" style={{ background: colors.blueBg }}>
               <div className="text-sm font-medium text-blue-700 mb-3 text-right">הפרשה קבועה חוזרת</div>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div><label className="block text-xs text-gray-500 mb-1 text-right">סכום ₪</label>
@@ -312,7 +313,7 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
               <div className="mb-3"><label className="block text-xs text-gray-500 mb-1 text-right">תיאור</label>
                 <input type="text" value={recurringDesc} onChange={e => setRecurringDesc(e.target.value)} placeholder="לדוגמה: הפרשה חודשית קבועה" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
               <div className="flex gap-2">
-                <button onClick={handleAddRecurring} className="px-4 py-2 rounded-lg text-white text-sm font-medium" style={{ background: '#2563EB' }}>הוסף</button>
+                <button onClick={handleAddRecurring} className="px-4 py-2 rounded-lg text-white text-sm font-medium" style={{ background: colors.blue }}>הוסף</button>
                 <button onClick={() => { setRecurringDesc(''); setRecurringAmount(''); setRecurringDay('1'); setAddMode(null); }} className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm">ביטול</button>
               </div>
             </div>
@@ -353,17 +354,17 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
           </div>
 
           <div className="px-6 py-6 flex justify-between items-center"
-            style={{ backgroundColor: hasSurplus || balance === 0 ? '#EAF3DE' : '#FCEBEB', color: hasSurplus || balance === 0 ? '#27500A' : '#A32D2D' }}>
+            style={{ backgroundColor: hasSurplus || balance === 0 ? colors.greenBg : colors.redBgSoft, color: hasSurplus || balance === 0 ? colors.greenLabel : colors.redText }}>
             <span className="font-bold text-xl">{hasSurplus ? 'עודף' : balance > 0 ? 'יתרת חוב' : 'מאוזן'}</span>
             <span className="font-bold text-2xl">{formatCurrency(balance)}</span>
           </div>
 
           <div className="border-t border-gray-200">
             <button onClick={() => setIsRecurringOpen(!isRecurringOpen)} className="w-full px-4 py-3 bg-gray-50 flex justify-between items-center text-sm">
-              <span style={{ display: 'inline-block', transform: isRecurringOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#6B7280' }}>▶</span>
+              <span style={{ display: 'inline-block', transform: isRecurringOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: colors.gray500 }}>▶</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-600">הפרשות קבועות</span>
-                {recurringPayments.length > 0 && <span style={{ background: '#DBEAFE', color: '#1D4ED8', fontSize: '11px', padding: '1px 8px', borderRadius: '999px' }}>{recurringPayments.length}</span>}
+                {recurringPayments.length > 0 && <span style={{ background: colors.blueBorder, color: colors.blueDark, fontSize: '11px', padding: '1px 8px', borderRadius: '999px' }}>{recurringPayments.length}</span>}
               </div>
             </button>
             <div style={{ maxHeight: isRecurringOpen ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
@@ -372,15 +373,15 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
               ) : (
                 <div className="divide-y divide-gray-100">
                   {recurringPayments.map((rp: RecurringPayment) => (
-                    <div key={rp.id} className="flex items-center px-4 py-3 gap-3" style={{ background: rp.enabled ? '#F8FBFF' : '#F9FAFB' }}>
+                    <div key={rp.id} className="flex items-center px-4 py-3 gap-3" style={{ background: rp.enabled ? colors.cardZebraB : colors.gray50 }}>
                       <button onClick={() => handleDeleteRecurring(rp.id)} className="text-gray-300 hover:text-red-500 text-sm flex-shrink-0">✕</button>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '13px', fontWeight: '500', color: rp.enabled ? '#1F2937' : '#9CA3AF', textDecoration: rp.enabled ? 'none' : 'line-through' }}>{rp.desc}</div>
-                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>יום {rp.dayOfMonth} לחודש · {formatCurrency(rp.amount)}</div>
+                        <div style={{ fontSize: '13px', fontWeight: '500', color: rp.enabled ? colors.gray900 : colors.gray400, textDecoration: rp.enabled ? 'none' : 'line-through' }}>{rp.desc}</div>
+                        <div style={{ fontSize: '11px', color: colors.gray500, marginTop: '2px' }}>יום {rp.dayOfMonth} לחודש · {formatCurrency(rp.amount)}</div>
                       </div>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}>
-                        <span style={{ fontSize: '12px', color: rp.enabled ? '#059669' : '#9CA3AF' }}>{rp.enabled ? 'פעיל' : 'כבוי'}</span>
-                        <input type="checkbox" checked={rp.enabled} onChange={() => handleToggleRecurring(rp.id)} style={{ width: '16px', height: '16px', accentColor: '#2563EB', cursor: 'pointer' }} />
+                        <span style={{ fontSize: '12px', color: rp.enabled ? colors.greenText : colors.gray400 }}>{rp.enabled ? 'פעיל' : 'כבוי'}</span>
+                        <input type="checkbox" checked={rp.enabled} onChange={() => handleToggleRecurring(rp.id)} style={{ width: '16px', height: '16px', accentColor: colors.blue, cursor: 'pointer' }} />
                       </label>
                     </div>
                   ))}
