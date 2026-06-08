@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { AppState, Project } from '@/lib/types';
 import { generateId, addProject, deleteProject } from '@/lib/storage';
 import { saveProjectToDB } from '@/lib/db';
+import { colors } from '@/lib/theme';
 import {
   calcProjectIncome,
   calcProjectExpense,
@@ -120,11 +121,11 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
   ];
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', direction: 'rtl', minHeight: '100vh', background: '#F3F4F6' }}>
-      <div style={{ background: '#1E3A5F', padding: '16px 16px 0' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', direction: 'rtl', minHeight: '100vh', background: colors.gray100 }}>
+      <div style={{ background: colors.navy, padding: '16px 16px 0' }}>
         <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ color: '#fff', fontSize: '18px', fontWeight: '500' }}>
+            <div style={{ color: colors.white, fontSize: '18px', fontWeight: '500' }}>
               {state.businessName || 'ניהול פרויקטים'}
             </div>
             {state.businessSubtitle && (
@@ -139,9 +140,9 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '14px' }}>
           {[
-            { label: 'הכנסות', grand: grandIncome, proj: projIncome, color: '#9FE1CB', vatSub: null as number | null },
-            { label: 'הוצאות', grand: grandExpense, proj: projExpense, color: '#F5C4B3', vatSub: null as number | null },
-            { label: 'רווח', grand: grandProfit, proj: projProfit, color: grandProfit >= 0 ? '#9FE1CB' : '#F5C4B3', vatSub: profitAfterVat as number | null },
+            { label: 'הכנסות', grand: grandIncome, proj: projIncome, color: colors.mintKpi, vatSub: null as number | null },
+            { label: 'הוצאות', grand: grandExpense, proj: projExpense, color: colors.peachKpi, vatSub: null as number | null },
+            { label: 'רווח', grand: grandProfit, proj: projProfit, color: grandProfit >= 0 ? colors.mintKpi : colors.peachKpi, vatSub: profitAfterVat as number | null },
           ].map(({ label, grand, proj, color, vatSub }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginBottom: '3px' }}>{label}</div>
@@ -158,7 +159,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
         <div style={{ display: 'flex' }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as Tab)}
-              style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: activeTab === tab.id ? '500' : '400', color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.55)', background: 'none', border: 'none', borderBottom: activeTab === tab.id ? '2px solid #60A5FA' : '2px solid transparent', cursor: 'pointer' }}>
+              style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: activeTab === tab.id ? '500' : '400', color: activeTab === tab.id ? colors.white : 'rgba(255,255,255,0.55)', background: 'none', border: 'none', borderBottom: activeTab === tab.id ? `2px solid ${colors.blueBright}` : '2px solid transparent', cursor: 'pointer' }}>
               {tab.label}
             </button>
           ))}
@@ -171,28 +172,28 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
         {activeTab === 'projects' && (
           <>
             {isCreating ? (
-              <div style={{ background: '#fff', borderRadius: '12px', padding: '14px', marginBottom: '10px', border: '1px solid #E5E7EB' }}>
-                <div style={{ fontWeight: '500', marginBottom: '10px', color: '#1F2937' }}>פרויקט חדש</div>
+              <div style={{ background: colors.white, borderRadius: '12px', padding: '14px', marginBottom: '10px', border: `1px solid ${colors.gray200}` }}>
+                <div style={{ fontWeight: '500', marginBottom: '10px', color: colors.gray900 }}>פרויקט חדש</div>
                 <input type="text" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="שם הפרויקט..." autoFocus onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
-                  style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', direction: 'rtl', outline: 'none', marginBottom: '8px', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', border: `1px solid ${colors.gray300}`, borderRadius: '8px', padding: '8px 10px', fontSize: '14px', direction: 'rtl', outline: 'none', marginBottom: '8px', boxSizing: 'border-box' }} />
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontSize: '12px', color: '#6B7280', whiteSpace: 'nowrap' }}>תאריך התחלה:</label>
+                  <label style={{ fontSize: '12px', color: colors.gray500, whiteSpace: 'nowrap' }}>תאריך התחלה:</label>
                   <input type="date" value={newProjectDeadline} onChange={e => setNewProjectDeadline(e.target.value)}
-                    style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', direction: 'ltr', outline: 'none' }} />
+                    style={{ flex: 1, border: `1px solid ${colors.gray300}`, borderRadius: '8px', padding: '7px 10px', fontSize: '13px', direction: 'ltr', outline: 'none' }} />
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={handleCreateProject} style={{ flex: 1, background: '#2563EB', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}>צור פרויקט</button>
-                  <button onClick={() => { setIsCreating(false); setNewProjectName(''); setNewProjectDeadline(''); }} style={{ flex: 1, background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '14px', cursor: 'pointer' }}>ביטול</button>
+                  <button onClick={handleCreateProject} style={{ flex: 1, background: colors.blue, color: colors.white, border: 'none', borderRadius: '8px', padding: '9px', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}>צור פרויקט</button>
+                  <button onClick={() => { setIsCreating(false); setNewProjectName(''); setNewProjectDeadline(''); }} style={{ flex: 1, background: colors.gray100, color: colors.gray500, border: 'none', borderRadius: '8px', padding: '9px', fontSize: '14px', cursor: 'pointer' }}>ביטול</button>
                 </div>
               </div>
             ) : (
-              <button onClick={() => setIsCreating(true)} style={{ width: '100%', background: '#2563EB', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginBottom: '10px' }}>
+              <button onClick={() => setIsCreating(true)} style={{ width: '100%', background: colors.blue, color: colors.white, border: 'none', borderRadius: '10px', padding: '11px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginBottom: '10px' }}>
                 + פרויקט חדש
               </button>
             )}
 
             {state.projects.length === 0 ? (
-              <div style={{ background: '#fff', borderRadius: '12px', padding: '40px 20px', textAlign: 'center', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
+              <div style={{ background: colors.white, borderRadius: '12px', padding: '40px 20px', textAlign: 'center', color: colors.gray400, border: `1px solid ${colors.gray200}` }}>
                 אין פרויקטים עדיין. לחץ על &quot;פרויקט חדש&quot; להתחלה.
               </div>
             ) : (
@@ -201,7 +202,7 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                   const income = calcProjectIncome(project);
                   const expense = calcProjectExpense(project);
                   const profit = calcProjectProfit(project);
-                  const cardBg = idx % 2 === 0 ? '#F0F7FF' : '#F8FBFF';
+                  const cardBg = idx % 2 === 0 ? colors.cardZebraA : colors.cardZebraB;
                   let pressTimer: ReturnType<typeof setTimeout> | null = null;
                   const handlePressStart = () => {
                     pressTimer = setTimeout(() => {
@@ -217,37 +218,37 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
                       onMouseLeave={() => { setHoveredCardId(null); handlePressEnd(); }}
                       onMouseDown={handlePressStart} onMouseUp={handlePressEnd}
                       onTouchStart={handlePressStart} onTouchEnd={handlePressEnd}
-                      style={{ background: cardBg, borderRadius: '12px', border: '1px solid #DBEAFE', overflow: 'hidden', cursor: 'pointer', userSelect: 'none' }}>
+                      style={{ background: cardBg, borderRadius: '12px', border: `1px solid ${colors.blueBorder}`, overflow: 'hidden', cursor: 'pointer', userSelect: 'none' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '11px 14px 8px', direction: 'rtl' }}>
                         {editingNameId === project.id ? (
                           <input type="text" value={editingNameValue} autoFocus onChange={e => setEditingNameValue(e.target.value)}
                             onBlur={() => { if (editingNameValue.trim()) handleProjectUpdate({ ...project, name: editingNameValue.trim() }); setEditingNameId(null); }}
                             onKeyDown={e => { if (e.key === 'Enter') { if (editingNameValue.trim()) handleProjectUpdate({ ...project, name: editingNameValue.trim() }); setEditingNameId(null); } if (e.key === 'Escape') setEditingNameId(null); }}
                             onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}
-                            style={{ fontSize: '15px', fontWeight: '500', color: '#1F2937', border: 'none', borderBottom: '2px solid #2563EB', background: 'transparent', outline: 'none', direction: 'rtl', width: '100%' }} />
+                            style={{ fontSize: '15px', fontWeight: '500', color: colors.gray900, border: 'none', borderBottom: `2px solid ${colors.blue}`, background: 'transparent', outline: 'none', direction: 'rtl', width: '100%' }} />
                         ) : (
-                          <div style={{ fontSize: '15px', fontWeight: '500', color: '#1F2937' }}
+                          <div style={{ fontSize: '15px', fontWeight: '500', color: colors.gray900 }}
                             onDoubleClick={e => { e.stopPropagation(); setEditingNameId(project.id); setEditingNameValue(project.name); }}>
                             {project.name}
                           </div>
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
-                          <input type="date" value={project.startDate || ''} onChange={e => handleProjectUpdate({ ...project, startDate: e.target.value })} style={{ border: 'none', background: 'transparent', fontSize: '11px', color: '#9CA3AF', direction: 'ltr', outline: 'none', width: '100px', cursor: 'pointer' }} />
-                          <span style={{ fontSize: '11px', color: '#D1D5DB' }}>—</span>
-                          <input type="date" value={project.endDate || ''} onChange={e => handleProjectUpdate({ ...project, endDate: e.target.value })} style={{ border: 'none', background: 'transparent', fontSize: '11px', color: '#9CA3AF', direction: 'ltr', outline: 'none', width: '100px', cursor: 'pointer' }} />
+                          <input type="date" value={project.startDate || ''} onChange={e => handleProjectUpdate({ ...project, startDate: e.target.value })} style={{ border: 'none', background: 'transparent', fontSize: '11px', color: colors.gray400, direction: 'ltr', outline: 'none', width: '100px', cursor: 'pointer' }} />
+                          <span style={{ fontSize: '11px', color: colors.gray300 }}>—</span>
+                          <input type="date" value={project.endDate || ''} onChange={e => handleProjectUpdate({ ...project, endDate: e.target.value })} style={{ border: 'none', background: 'transparent', fontSize: '11px', color: colors.gray400, direction: 'ltr', outline: 'none', width: '100px', cursor: 'pointer' }} />
                           {hoveredCardId === project.id && (
-                            <button onClick={(e) => handleDeleteProject(project.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: '14px', padding: '2px 4px', lineHeight: 1 }}>✕</button>
+                            <button onClick={(e) => handleDeleteProject(project.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.redStrong, fontSize: '14px', padding: '2px 4px', lineHeight: 1 }}>✕</button>
                           )}
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderTop: '1px solid #F3F4F6' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderTop: `1px solid ${colors.gray100}` }}>
                         {[
-                          { label: 'הכנסות', value: income, color: '#059669' },
-                          { label: 'הוצאות', value: expense, color: '#DC2626' },
-                          { label: 'רווח', value: profit, color: profit >= 0 ? '#2563EB' : '#DC2626' },
+                          { label: 'הכנסות', value: income, color: colors.greenText },
+                          { label: 'הוצאות', value: expense, color: colors.red },
+                          { label: 'רווח', value: profit, color: profit >= 0 ? colors.blue : colors.red },
                         ].map(({ label, value, color }, i) => (
-                          <div key={label} style={{ padding: '8px 10px', textAlign: 'center', borderRight: i < 2 ? '1px solid #F3F4F6' : 'none' }}>
-                            <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>{label}</div>
+                          <div key={label} style={{ padding: '8px 10px', textAlign: 'center', borderRight: i < 2 ? `1px solid ${colors.gray100}` : 'none' }}>
+                            <div style={{ fontSize: '11px', color: colors.gray400, marginBottom: '2px' }}>{label}</div>
                             <div style={{ fontSize: '15px', fontWeight: '500', color }}>{fmt(value)}</div>
                           </div>
                         ))}

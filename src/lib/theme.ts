@@ -7,9 +7,12 @@ export const colors = {
   blue: '#2563EB',        // פעולה ראשית
   blueDisabled: '#93C5FD', // כפתור כחול מושבת
   blueDark: '#1D4ED8',
+  blueBright: '#60A5FA',  // קו טאב פעיל
   blueBg: '#EFF6FF',
   blueBorder: '#DBEAFE',
   blueBorderSoft: '#BFDBFE',
+  cardZebraA: '#F0F7FF',  // רקע כרטיס פרויקט (זוגי)
+  cardZebraB: '#F8FBFF',  // רקע כרטיס פרויקט (אי-זוגי)
 
   // הכנסות / חיובי (ירוק)
   green: '#1D9E75',       // header הכנסות
@@ -17,9 +20,11 @@ export const colors = {
   greenDeep: '#065F46',
   greenLabel: '#27500A',
   greenBg: '#EAF3DE',
+  mintKpi: '#9FE1CB',     // צבע KPI חיובי על רקע navy
 
   // הוצאות / שלילי
   orange: '#D85A30',      // header הוצאות
+  peachKpi: '#F5C4B3',    // צבע KPI שלילי על רקע navy
   orangeBg: '#FAECE7',
   orangeText: '#712B13',
   red: '#DC2626',
