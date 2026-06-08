@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AppState, LineItem, RecurringGeneralItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
+import { deleteGeneralItemFromDB } from '@/lib/db';
 import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, calcGeneralHomeBalance } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
 
@@ -113,6 +114,8 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   const deleteRow = (field: TableType, itemId: string) => {
     onStateChange({ ...state, [field]: (state[field] as LineItem[]).filter((item: LineItem) => item.id !== itemId) });
     setExpandedRows(prev => { const s = new Set(prev); s.delete(itemId); return s; });
+    // מחיקה ממוקדת ב-DB — רק השורה הזו, לעולם לא יותר
+    deleteGeneralItemFromDB(itemId);
   };
 
   const handleAddSingle = (field: TableType) => {

@@ -115,6 +115,12 @@ export async function saveProjectToDB(project: Project): Promise<void> {
   await supabase.from('line_items').upsert(allItems);
 }
 
+// מחיקה ממוקדת של שורת פרויקט בודדת (מחיקה מפורשת של המשתמש)
+export async function deleteLineItemFromDB(itemId: string): Promise<void> {
+  if (!itemId) return;
+  await supabase.from('line_items').delete().eq('id', itemId);
+}
+
 // שכבה 2 — גיבוי לפני מחיקה
 async function backupLineItems(projectId: string): Promise<void> {
   try {
@@ -149,12 +155,17 @@ export async function deleteProjectFromDB(projectId: string): Promise<void> {
 export async function saveDeductionsToDB(deductions: Deduction[]): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from('deductions').delete().eq('user_id', user.id);
-  if (deductions.length > 0) {
-    await supabase.from('deductions').insert(
-      deductions.map((d, i) => ({ id: d.id, user_id: user.id, name: d.name, pct: d.pct, enabled: d.enabled, sort_order: i }))
-    );
-  }
+  // upsert בלבד — מוסיף/מעדכן, לעולם לא מוחק המונית
+  if (deductions.length === 0) return;
+  await supabase.from('deductions').upsert(
+    deductions.map((d, i) => ({ id: d.id, user_id: user.id, name: d.name, pct: d.pct, enabled: d.enabled, sort_order: i }))
+  );
+}
+
+// מחיקה ממוקדת של ניכוי בודד (מחיקה מפורשת של המשתמש)
+export async function deleteDeductionFromDB(id: string): Promise<void> {
+  if (!id) return;
+  await supabase.from('deductions').delete().eq('id', id);
 }
 
 export async function saveMaasarPctToDB(pct: number): Promise<void> {
@@ -208,6 +219,12 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
   if (rows.length > 0) {
     await supabase.from('general_items').upsert(rows);
   }
+}
+
+// מחיקה ממוקדת של פריט כללי בודד (מחיקה מפורשת של המשתמש)
+export async function deleteGeneralItemFromDB(itemId: string): Promise<void> {
+  if (!itemId) return;
+  await supabase.from('general_items').delete().eq('id', itemId);
 }
 
 export async function saveRecurringGeneralItemToDB(item: RecurringGeneralItem): Promise<void> {

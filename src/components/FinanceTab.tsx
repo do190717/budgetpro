@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AppState, Deduction, MaasarPayment, RecurringPayment } from '@/lib/types';
 import { generateId, updateDeductions, updateMaasarPct, addMaasarPayment, deleteMaasarPayment, addRecurringPayment, updateRecurringPayment, deleteRecurringPayment } from '@/lib/storage';
+import { deleteDeductionFromDB } from '@/lib/db';
 import {
   calcDeductionAmount,
   calcTotalDeductions,
@@ -99,6 +100,8 @@ export default function FinanceTab({ state, onStateChange }: FinanceTabProps) {
     setConfirmState({ open: true, title: 'האם למחוק את הניכוי?', onConfirm: () => {
       const updated = state.deductions.filter(d => d.id !== deductionId);
       onStateChange(updateDeductions(state, updated));
+      // מחיקה ממוקדת ב-DB — רק הניכוי הזה
+      deleteDeductionFromDB(deductionId);
     }});
   };
 

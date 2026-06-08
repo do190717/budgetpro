@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Project, LineItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
+import { deleteLineItemFromDB } from '@/lib/db';
 import {
   calcProjectIncome,
   calcProjectExpense,
@@ -98,6 +99,8 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
   const deleteRow = (type: 'income' | 'expense', itemId: string) => {
     onUpdate({ ...project, [type]: project[type].filter(item => item.id !== itemId) });
     setExpandedRows(prev => { const s = new Set(prev); s.delete(itemId); return s; });
+    // מחיקה ממוקדת ב-DB — רק השורה הזו, לעולם לא יותר
+    deleteLineItemFromDB(itemId);
   };
 
   const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
