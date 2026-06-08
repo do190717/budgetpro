@@ -127,7 +127,13 @@ export async function saveProjectToDB(project: Project): Promise<void> {
   ];
 
   // upsert השורות הקיימות
-  await supabase.from('line_items').upsert(allItems);
+  const { error: upsertError } = await supabase.from('line_items').upsert(allItems);
+
+  // ⛔ אם השמירה נכשלה — לא ממשיכים למחיקה, כדי לא לאבד נתונים קיימים
+  if (upsertError) {
+    console.error('שמירת שורות נכשלה — מדלגים על המחיקה כדי לא לאבד נתונים:', upsertError);
+    return;
+  }
 
   // מחק שורות שנמחקו על ידי המשתמש
   const currentIds = allItems.map(i => i.id);
