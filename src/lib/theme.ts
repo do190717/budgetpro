@@ -5,6 +5,7 @@ export const colors = {
   // מותג
   navy: '#1E3A5F',        // רקע header ראשי
   blue: '#2563EB',        // פעולה ראשית
+  blueDisabled: '#93C5FD', // כפתור כחול מושבת
   blueDark: '#1D4ED8',
   blueBg: '#EFF6FF',
   blueBorder: '#DBEAFE',
