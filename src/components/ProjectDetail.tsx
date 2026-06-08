@@ -12,10 +12,9 @@ import {
   calcProjectOutputVat,
   calcProjectInputVat,
   calcProjectNetVat,
+  fmt,
 } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
-
-const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
 
 interface Props {
   project: Project;

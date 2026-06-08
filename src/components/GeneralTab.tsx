@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { AppState, LineItem, RecurringGeneralItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
 import { deleteGeneralItemFromDB } from '@/lib/db';
-import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, calcGeneralHomeBalance } from '@/lib/calculations';
+import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, calcGeneralHomeBalance, fmt } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
 
-const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
 const todayStr = () => new Date().toISOString().split('T')[0];
 const fmtShortDate = (d: string) => {
   if (!d) return '';

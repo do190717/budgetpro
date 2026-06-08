@@ -1,11 +1,19 @@
 import { Project, Deduction, AppState, MaasarPayment, LineItem } from './types';
 
+// סכימת סכומים של רשימת שורות — עוזר משותף
+export function sumAmounts(items: LineItem[]): number {
+  return (items || []).reduce((sum, item) => sum + item.amount, 0);
+}
+
+// פורמט מטבע קצר לתצוגה (₪1,234)
+export const fmt = (n: number): string => '₪' + Math.round(n).toLocaleString('he-IL');
+
 export function calcProjectIncome(project: Project): number {
-  return project.income.reduce((sum, item) => sum + item.amount, 0);
+  return sumAmounts(project.income);
 }
 
 export function calcProjectExpense(project: Project): number {
-  return project.expense.reduce((sum, item) => sum + item.amount, 0);
+  return sumAmounts(project.expense);
 }
 
 export function calcProjectProfit(project: Project): number {
@@ -63,11 +71,11 @@ export function calcTotalProfit(projects: Project[]): number {
 }
 
 export function calcGeneralIncome(items: LineItem[]): number {
-  return (items || []).reduce((sum, item) => sum + item.amount, 0);
+  return sumAmounts(items);
 }
 
 export function calcGeneralExpense(items: LineItem[]): number {
-  return (items || []).reduce((sum, item) => sum + item.amount, 0);
+  return sumAmounts(items);
 }
 
 // רווח עסקי כללי = הכנסות - הוצאות עסקיות (נכנס לבסיס מעשר)

@@ -16,6 +16,7 @@ import {
   calcGrandTotalProfit,
   calcProfitAfterVat,
   getVatRate,
+  fmt,
 } from '@/lib/calculations';
 import ProjectDetail from './ProjectDetail';
 import FinanceTab from './FinanceTab';
@@ -29,8 +30,6 @@ interface DashboardProps {
 }
 
 type Tab = 'projects' | 'general' | 'finance';
-
-const fmt = (n: number) => '₪' + Math.round(n).toLocaleString('he-IL');
 
 export default function Dashboard({ state, onStateChange }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('projects');
