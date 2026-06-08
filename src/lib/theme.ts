@@ -9,6 +9,7 @@ export const colors = {
   blueDark: '#1D4ED8',
   blueBg: '#EFF6FF',
   blueBorder: '#DBEAFE',
+  blueBorderSoft: '#BFDBFE',
 
   // הכנסות / חיובי (ירוק)
   green: '#1D9E75',       // header הכנסות
@@ -22,6 +23,7 @@ export const colors = {
   orangeBg: '#FAECE7',
   orangeText: '#712B13',
   red: '#DC2626',
+  redBorder: '#FCA5A5',
   redStrong: '#EF4444',
   redDeep: '#991B1B',
   redBg: '#FEF2F2',

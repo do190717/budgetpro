@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { AppState } from '@/lib/types';
 import { saveBusinessInfoToDB } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
+import { colors } from '@/lib/theme';
 
 interface Props {
   state: AppState;
@@ -42,34 +43,34 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
 
   const rowStyle: React.CSSProperties = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '13px 16px', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', background: '#fff',
+    padding: '13px 16px', borderBottom: `1px solid ${colors.gray100}`, cursor: 'pointer', background: colors.white,
   };
-  const labelStyle: React.CSSProperties = { fontSize: '14px', color: '#1F2937' };
-  const subStyle: React.CSSProperties = { fontSize: '12px', color: '#9CA3AF', marginTop: '2px' };
-  const chevron = <span style={{ color: '#D1D5DB', fontSize: '18px' }}>‹</span>;
+  const labelStyle: React.CSSProperties = { fontSize: '14px', color: colors.gray900 };
+  const subStyle: React.CSSProperties = { fontSize: '12px', color: colors.gray400, marginTop: '2px' };
+  const chevron = <span style={{ color: colors.gray300, fontSize: '18px' }}>‹</span>;
 
   const sectionHeader = (title: string) => (
-    <div style={{ background: '#1E3A5F', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div style={{ background: colors.navy, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
       <button onClick={() => setSection('main')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '22px', cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}>›</button>
-      <span style={{ color: '#fff', fontSize: '15px', fontWeight: '500' }}>{title}</span>
+      <span style={{ color: colors.white, fontSize: '15px', fontWeight: '500' }}>{title}</span>
     </div>
   );
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', direction: 'rtl' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#F3F4F6', borderRadius: '16px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden', maxHeight: '85vh', overflowY: 'auto' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: colors.gray100, borderRadius: '16px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden', maxHeight: '85vh', overflowY: 'auto' }}>
 
         {section === 'main' && (<>
-          <div style={{ background: '#1E3A5F', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#fff', fontSize: '16px', fontWeight: '500' }}>הגדרות</span>
+          <div style={{ background: colors.navy, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: colors.white, fontSize: '16px', fontWeight: '500' }}>הגדרות</span>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
           </div>
 
-          <div style={{ padding: '10px 16px 4px', fontSize: '11px', color: '#9CA3AF', fontWeight: '500', letterSpacing: '0.05em' }}>חשבון</div>
-          <div style={{ background: '#fff', borderRadius: '10px', margin: '0 8px', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #F3F4F6' }}>
-              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>מחובר כ</div>
-              <div style={{ fontSize: '14px', color: '#1F2937', direction: 'ltr', textAlign: 'right', marginTop: '2px' }}>{userEmail}</div>
+          <div style={{ padding: '10px 16px 4px', fontSize: '11px', color: colors.gray400, fontWeight: '500', letterSpacing: '0.05em' }}>חשבון</div>
+          <div style={{ background: colors.white, borderRadius: '10px', margin: '0 8px', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: `1px solid ${colors.gray100}` }}>
+              <div style={{ fontSize: '12px', color: colors.gray400 }}>מחובר כ</div>
+              <div style={{ fontSize: '14px', color: colors.gray900, direction: 'ltr', textAlign: 'right', marginTop: '2px' }}>{userEmail}</div>
             </div>
             <div onClick={() => setSection('business')} style={rowStyle}>
               <div>
@@ -80,8 +81,8 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
             </div>
           </div>
 
-          <div style={{ padding: '14px 16px 4px', fontSize: '11px', color: '#9CA3AF', fontWeight: '500', letterSpacing: '0.05em' }}>מידע ותמיכה</div>
-          <div style={{ background: '#fff', borderRadius: '10px', margin: '0 8px', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px 4px', fontSize: '11px', color: colors.gray400, fontWeight: '500', letterSpacing: '0.05em' }}>מידע ותמיכה</div>
+          <div style={{ background: colors.white, borderRadius: '10px', margin: '0 8px', overflow: 'hidden' }}>
             <div onClick={() => setSection('contact')} style={rowStyle}>
               <div style={labelStyle}>יצירת קשר ותמיכה</div>
               {chevron}
@@ -96,8 +97,8 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
             </div>
           </div>
 
-          <div style={{ padding: '14px 16px 4px', fontSize: '11px', color: '#9CA3AF', fontWeight: '500', letterSpacing: '0.05em' }}>בקרוב</div>
-          <div style={{ background: '#fff', borderRadius: '10px', margin: '0 8px', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px 4px', fontSize: '11px', color: colors.gray400, fontWeight: '500', letterSpacing: '0.05em' }}>בקרוב</div>
+          <div style={{ background: colors.white, borderRadius: '10px', margin: '0 8px', overflow: 'hidden' }}>
             {[
               { label: 'מצב לילה', sub: 'Dark Mode' },
               { label: 'שפה', sub: 'עברית / English' },
@@ -105,18 +106,18 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
               { label: 'התראות', sub: 'תזכורות חודשיות' },
               { label: 'מטבע', sub: '₪ / $ / €' },
             ].map((item, i, arr) => (
-              <div key={item.label} style={{ ...rowStyle, borderBottom: i < arr.length - 1 ? '1px solid #F3F4F6' : 'none', cursor: 'default', opacity: 0.5 }}>
+              <div key={item.label} style={{ ...rowStyle, borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray100}` : 'none', cursor: 'default', opacity: 0.5 }}>
                 <div>
                   <div style={labelStyle}>{item.label}</div>
                   <div style={subStyle}>{item.sub}</div>
                 </div>
-                <span style={{ fontSize: '10px', background: '#EFF6FF', color: '#2563EB', padding: '2px 8px', borderRadius: '999px' }}>בקרוב</span>
+                <span style={{ fontSize: '10px', background: colors.blueBg, color: colors.blue, padding: '2px 8px', borderRadius: '999px' }}>בקרוב</span>
               </div>
             ))}
           </div>
 
           <div style={{ padding: '12px 8px 16px' }}>
-            <button onClick={handleSignOut} style={{ width: '100%', background: '#fff', border: '1px solid #FCA5A5', borderRadius: '10px', padding: '12px', fontSize: '14px', color: '#DC2626', cursor: 'pointer' }}>
+            <button onClick={handleSignOut} style={{ width: '100%', background: colors.white, border: `1px solid ${colors.redBorder}`, borderRadius: '10px', padding: '12px', fontSize: '14px', color: colors.red, cursor: 'pointer' }}>
               יציאה מהחשבון
             </button>
           </div>
@@ -126,20 +127,20 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
           {sectionHeader('פרטי עסק')}
           <div style={{ padding: '16px' }}>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>שם עסק / שם מלא</label>
+              <label style={{ fontSize: '12px', color: colors.gray500, display: 'block', marginBottom: '4px' }}>שם עסק / שם מלא</label>
               <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="לדוגמה: ד.א. עבודות פלדה" autoFocus
-                style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '10px 12px', fontSize: '14px', direction: 'rtl', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+                style={{ width: '100%', border: `1px solid ${colors.gray300}`, borderRadius: '8px', padding: '10px 12px', fontSize: '14px', direction: 'rtl', outline: 'none', boxSizing: 'border-box', background: colors.white }} />
             </div>
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>כותרת משנה (אופציונלי)</label>
+              <label style={{ fontSize: '12px', color: colors.gray500, display: 'block', marginBottom: '4px' }}>כותרת משנה (אופציונלי)</label>
               <input type="text" value={businessSubtitle} onChange={e => setBusinessSubtitle(e.target.value)} placeholder="לדוגמה: קבלן בניה"
-                style={{ width: '100%', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '10px 12px', fontSize: '14px', direction: 'rtl', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+                style={{ width: '100%', border: `1px solid ${colors.gray300}`, borderRadius: '8px', padding: '10px 12px', fontSize: '14px', direction: 'rtl', outline: 'none', boxSizing: 'border-box', background: colors.white }} />
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: saving ? '#93C5FD' : '#2563EB', color: '#fff', border: 'none', borderRadius: '8px', padding: '11px', fontSize: '14px', fontWeight: '500', cursor: saving ? 'default' : 'pointer' }}>
+              <button onClick={handleSave} disabled={saving} style={{ flex: 1, background: saving ? colors.blueDisabled : colors.blue, color: colors.white, border: 'none', borderRadius: '8px', padding: '11px', fontSize: '14px', fontWeight: '500', cursor: saving ? 'default' : 'pointer' }}>
                 {saving ? 'שומר...' : 'שמור'}
               </button>
-              <button onClick={() => setSection('main')} style={{ flex: 1, background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: '8px', padding: '11px', fontSize: '14px', cursor: 'pointer' }}>ביטול</button>
+              <button onClick={() => setSection('main')} style={{ flex: 1, background: colors.gray100, color: colors.gray500, border: 'none', borderRadius: '8px', padding: '11px', fontSize: '14px', cursor: 'pointer' }}>ביטול</button>
             </div>
           </div>
         </>)}
@@ -147,13 +148,13 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
         {section === 'contact' && (<>
           {sectionHeader('יצירת קשר ותמיכה')}
           <div style={{ padding: '12px 8px' }}>
-            <div style={{ background: '#fff', borderRadius: '10px', overflow: 'hidden', marginBottom: '12px' }}>
+            <div style={{ background: colors.white, borderRadius: '10px', overflow: 'hidden', marginBottom: '12px' }}>
               {[
                 { icon: '📧', label: 'אימייל', value: 'do190717@gmail.com', action: () => window.open('mailto:do190717@gmail.com') },
                 { icon: '📱', label: 'טלפון / WhatsApp', value: '050-4190717', action: () => window.open('https://wa.me/972504190717') },
                 { icon: '🌐', label: 'אתר האפליקציה', value: 'app-budgetpro.co.il', action: () => window.open('https://app-budgetpro.co.il', '_blank') },
               ].map((item, i, arr) => (
-                <div key={item.label} onClick={item.action} style={{ ...rowStyle, borderBottom: i < arr.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                <div key={item.label} onClick={item.action} style={{ ...rowStyle, borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray100}` : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '20px' }}>{item.icon}</span>
                     <div>
@@ -165,23 +166,23 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: '12px', color: '#9CA3AF', textAlign: 'center' }}>נשתדל להשיב תוך 72 שעות בימי עסקים</p>
+            <p style={{ fontSize: '12px', color: colors.gray400, textAlign: 'center' }}>נשתדל להשיב תוך 72 שעות בימי עסקים</p>
           </div>
         </>)}
 
         {section === 'privacy' && (<>
           {sectionHeader('מדיניות פרטיות')}
           <div style={{ padding: '16px 12px' }}>
-            <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
-              <p style={{ fontSize: '14px', color: '#4B5563', lineHeight: '1.7', marginBottom: '12px' }}>
+            <div style={{ background: colors.white, borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: colors.gray600, lineHeight: '1.7', marginBottom: '12px' }}>
                 BudgetPro מחויבת להגנה על פרטיותך. אנו אוספים רק את המידע הנדרש להפעלת האפליקציה ולא מוכרים אותו לצדדים שלישיים.
               </p>
-              <p style={{ fontSize: '14px', color: '#4B5563', lineHeight: '1.7' }}>
+              <p style={{ fontSize: '14px', color: colors.gray600, lineHeight: '1.7' }}>
                 הנתונים שלך מאוחסנים בצורה מוצפנת ומאובטחת. כל משתמש רואה אך ורק את הנתונים שלו.
               </p>
             </div>
             <button onClick={() => window.open('https://app-budgetpro.co.il/privacy-policy', '_blank')}
-              style={{ width: '100%', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '10px', padding: '12px', fontSize: '14px', color: '#2563EB', cursor: 'pointer' }}>
+              style={{ width: '100%', background: colors.blueBg, border: `1px solid ${colors.blueBorderSoft}`, borderRadius: '10px', padding: '12px', fontSize: '14px', color: colors.blue, cursor: 'pointer' }}>
               קרא את מדיניות הפרטיות המלאה ↗
             </button>
           </div>
@@ -190,16 +191,16 @@ export default function SettingsModal({ state, onClose, onSave }: Props) {
         {section === 'about' && (<>
           {sectionHeader('אודות BudgetPro')}
           <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-            <div style={{ width: '72px', height: '72px', background: '#1E3A5F', borderRadius: '18px', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '700', color: '#fff' }}>DA</div>
-            <div style={{ fontSize: '20px', fontWeight: '600', color: '#1F2937', marginBottom: '4px' }}>BudgetPro</div>
-            <div style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '20px' }}>גרסה 1.0.0</div>
-            <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.7', marginBottom: '8px' }}>
+            <div style={{ width: '72px', height: '72px', background: colors.navy, borderRadius: '18px', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '700', color: colors.white }}>DA</div>
+            <div style={{ fontSize: '20px', fontWeight: '600', color: colors.gray900, marginBottom: '4px' }}>BudgetPro</div>
+            <div style={{ fontSize: '13px', color: colors.gray400, marginBottom: '20px' }}>גרסה 1.0.0</div>
+            <p style={{ fontSize: '14px', color: colors.gray500, lineHeight: '1.7', marginBottom: '8px' }}>
               אפליקציה לניהול תקציב פרויקטים, מעקב הכנסות והוצאות, ניכויי מס וחישוב מעשרות.
             </p>
-            <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.7', marginBottom: '20px' }}>
+            <p style={{ fontSize: '14px', color: colors.gray500, lineHeight: '1.7', marginBottom: '20px' }}>
               פותחה עבור בעלי עסקים וקבלנים עצמאיים בישראל.
             </p>
-            <div style={{ fontSize: '12px', color: '#D1D5DB' }}>© 2026 ד.א. עבודות פלדה. כל הזכויות שמורות.</div>
+            <div style={{ fontSize: '12px', color: colors.gray300 }}>© 2026 ד.א. עבודות פלדה. כל הזכויות שמורות.</div>
           </div>
         </>)}
 
