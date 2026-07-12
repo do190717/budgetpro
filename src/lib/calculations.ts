@@ -103,6 +103,60 @@ export function calcGrandTotalExpense(state: AppState): number {
   return calcTotalExpense(state.projects) + calcGeneralExpense(state.generalExpenseWork || []) + calcGeneralExpense(state.generalExpenseHome || []);
 }
 
+// ===== מע"מ ברמת הפרויקטים בלבד (ל-KPI בטאב פרויקטים) =====
+
+// סך הכנסות חייבות מע"מ (כולל מע"מ) — הכנסות פרויקטים בלבד
+export function calcProjectsVatableIncome(projects: Project[]): number {
+  return projects.flatMap(p => p.income).filter(isVatable).reduce((s, i) => s + i.amount, 0);
+}
+
+// סך הוצאות חייבות מע"מ (כולל מע"מ) — הוצאות פרויקטים בלבד
+export function calcProjectsVatableExpense(projects: Project[]): number {
+  return projects.flatMap(p => p.expense).filter(isVatable).reduce((s, i) => s + i.amount, 0);
+}
+
+// מע"מ נטו לתשלום של הפרויקטים בלבד = עסקאות פחות תשומות
+export function calcProjectsNetVat(projects: Project[], rate: number): number {
+  return vatComponent(calcProjectsVatableIncome(projects), rate) - vatComponent(calcProjectsVatableExpense(projects), rate);
+}
+
+// רווח הפרויקטים אחרי מע"מ
+export function calcProjectsProfitAfterVat(projects: Project[], rate: number): number {
+  return calcTotalProfit(projects) - calcProjectsNetVat(projects, rate);
+}
+
+// הכנסות הפרויקטים בלי מע"מ
+export function calcProjectsIncomeExVat(projects: Project[], rate: number): number {
+  return calcTotalIncome(projects) - vatComponent(calcProjectsVatableIncome(projects), rate);
+}
+
+// הוצאות הפרויקטים בלי מע"מ
+export function calcProjectsExpenseExVat(projects: Project[], rate: number): number {
+  return calcTotalExpense(projects) - vatComponent(calcProjectsVatableExpense(projects), rate);
+}
+
+// ===== מע"מ ברמת הכללי בלבד (ל-KPI בטאב כללי) =====
+
+// בסיס המע"מ של הכללי בלבד — הכנסות כלליות חייבות מע"מ
+export function calcGeneralVatableIncome(state: AppState): number {
+  return (state.generalIncome || []).filter(isVatable).reduce((s, i) => s + i.amount, 0);
+}
+
+// בסיס המע"מ של הכללי בלבד — הוצאות עבודה כלליות חייבות מע"מ (ללא ביתיות)
+export function calcGeneralVatableExpense(state: AppState): number {
+  return (state.generalExpenseWork || []).filter(isVatable).reduce((s, i) => s + i.amount, 0);
+}
+
+// הכנסות הכללי בלי מע"מ
+export function calcGeneralIncomeExVat(state: AppState, rate: number): number {
+  return calcGeneralIncome(state.generalIncome || []) - vatComponent(calcGeneralVatableIncome(state), rate);
+}
+
+// הוצאות עסקיות (כללי) בלי מע"מ
+export function calcGeneralBusinessExpenseExVat(state: AppState, rate: number): number {
+  return calcGeneralExpense(state.generalExpenseWork || []) - vatComponent(calcGeneralVatableExpense(state), rate);
+}
+
 // ===== מע"מ ברמת כל העסק (פרויקטים + כללי) =====
 
 // סך הכנסות חייבות מע"מ (כולל מע"מ) — הכנסות פרויקטים + הכנסות כלליות
@@ -142,6 +196,12 @@ export function calcProfitAfterVat(state: AppState): number {
 export function calcGrandTotalIncomeExVat(state: AppState): number {
   const rate = getVatRate(state.deductions);
   return calcGrandTotalIncome(state) - calcStateOutputVat(state, rate);
+}
+
+// הוצאות בלי מע"מ — לכל ההוצאות, בניכוי רכיב המע"מ מהחייבות
+export function calcGrandTotalExpenseExVat(state: AppState): number {
+  const rate = getVatRate(state.deductions);
+  return calcGrandTotalExpense(state) - calcStateInputVat(state, rate);
 }
 
 // ניכויי מס שאינם מע"מ (מע"מ מטופל כשכבה אמיתית נפרדת)

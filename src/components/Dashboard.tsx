@@ -12,9 +12,19 @@ import {
   calcTotalIncome,
   calcTotalExpense,
   calcTotalProfit,
+  calcProjectsIncomeExVat,
+  calcProjectsExpenseExVat,
+  calcProjectsProfitAfterVat,
+  calcGeneralIncome,
+  calcGeneralExpense,
+  calcGeneralBusinessProfit,
+  calcGeneralIncomeExVat,
+  calcGeneralBusinessExpenseExVat,
   calcGrandTotalIncome,
   calcGrandTotalExpense,
   calcGrandTotalProfit,
+  calcGrandTotalIncomeExVat,
+  calcGrandTotalExpenseExVat,
   calcProfitAfterVat,
   getVatRate,
   fmt,
@@ -106,13 +116,25 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
     }
   }
 
-  const grandIncome = calcGrandTotalIncome(state);
-  const grandExpense = calcGrandTotalExpense(state);
-  const grandProfit = calcGrandTotalProfit(state);
-  const profitAfterVat = calcProfitAfterVat(state);
-  const projIncome = calcTotalIncome(state.projects);
-  const projExpense = calcTotalExpense(state.projects);
+  const vatRate = getVatRate(state.deductions);
   const projProfit = calcTotalProfit(state.projects);
+  const generalBusinessProfit = calcGeneralBusinessProfit(state);
+  const grandProfit = calcGrandTotalProfit(state);
+
+  // KPI-י הבאנר לפי הטאב הפעיל: פרויקטים = פרויקטים בלבד, כללי = כללי בלבד (עסקי/ביתי בנפרד), ניכויים = הכל
+  const kpiItems = activeTab === 'projects' ? [
+    { label: 'הכנסות', value: calcTotalIncome(state.projects), color: colors.mintKpi, subLabel: 'בלי מע"מ', subValue: calcProjectsIncomeExVat(state.projects, vatRate) },
+    { label: 'הוצאות', value: calcTotalExpense(state.projects), color: colors.peachKpi, subLabel: 'בלי מע"מ', subValue: calcProjectsExpenseExVat(state.projects, vatRate) },
+    { label: 'רווח', value: projProfit, color: projProfit >= 0 ? colors.mintKpi : colors.peachKpi, subLabel: 'בלי מע"מ', subValue: calcProjectsProfitAfterVat(state.projects, vatRate) },
+  ] : activeTab === 'general' ? [
+    { label: 'הכנסות', value: calcGeneralIncome(state.generalIncome || []), color: colors.mintKpi, subLabel: 'בלי מע"מ', subValue: calcGeneralIncomeExVat(state, vatRate) },
+    { label: 'הוצאות עסקיות', value: calcGeneralExpense(state.generalExpenseWork || []), color: colors.peachKpi, subLabel: 'בלי מע"מ', subValue: calcGeneralBusinessExpenseExVat(state, vatRate) },
+    { label: 'רווח', value: generalBusinessProfit, color: generalBusinessProfit >= 0 ? colors.mintKpi : colors.peachKpi, subLabel: null as string | null, subValue: null as number | null },
+  ] : [
+    { label: 'הכנסות', value: calcGrandTotalIncome(state), color: colors.mintKpi, subLabel: 'בלי מע"מ', subValue: calcGrandTotalIncomeExVat(state) },
+    { label: 'הוצאות', value: calcGrandTotalExpense(state), color: colors.peachKpi, subLabel: 'בלי מע"מ', subValue: calcGrandTotalExpenseExVat(state) },
+    { label: 'רווח', value: grandProfit, color: grandProfit >= 0 ? colors.mintKpi : colors.peachKpi, subLabel: 'בלי מע"מ', subValue: calcProfitAfterVat(state) as number | null },
+  ];
 
   const tabs = [
     { id: 'projects', label: 'פרויקטים' },
@@ -138,19 +160,13 @@ export default function Dashboard({ state, onStateChange }: DashboardProps) {
           >⚙️</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '14px' }}>
-          {[
-            { label: 'הכנסות', grand: grandIncome, proj: projIncome, color: colors.mintKpi, vatSub: null as number | null },
-            { label: 'הוצאות', grand: grandExpense, proj: projExpense, color: colors.peachKpi, vatSub: null as number | null },
-            { label: 'רווח', grand: grandProfit, proj: projProfit, color: grandProfit >= 0 ? colors.mintKpi : colors.peachKpi, vatSub: profitAfterVat as number | null },
-          ].map(({ label, grand, proj, color, vatSub }) => (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${kpiItems.length},1fr)`, gap: '6px', marginBottom: '14px' }}>
+          {kpiItems.map(({ label, value, color, subLabel, subValue }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginBottom: '3px' }}>{label}</div>
-              <div style={{ color, fontSize: '20px', fontWeight: '500' }}>{fmt(grand)}</div>
-              {vatSub !== null && vatSub !== grand ? (
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '3px' }}>בלי מע&quot;מ {fmt(vatSub)}</div>
-              ) : grand !== proj ? (
-                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginTop: '3px' }}>פרויקטים {fmt(proj)}</div>
+              <div style={{ color, fontSize: '20px', fontWeight: '500' }}>{fmt(value)}</div>
+              {subLabel !== null && subValue !== null && subValue !== value ? (
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '3px' }}>{subLabel} {fmt(subValue)}</div>
               ) : null}
             </div>
           ))}
