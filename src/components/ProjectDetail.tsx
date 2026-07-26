@@ -72,10 +72,11 @@ export default function ProjectDetail({ project, vatRate, onBack, onUpdate }: Pr
   };
 
   const updateItem = (type: 'income' | 'expense', itemId: string, field: keyof LineItem, value: string | number) => {
+    const safeValue = field === 'date' && !value ? today : value;
     onUpdate({
       ...project,
       [type]: project[type].map(item =>
-        item.id === itemId ? { ...item, [field]: value } : item
+        item.id === itemId ? { ...item, [field]: safeValue } : item
       ),
     });
   };

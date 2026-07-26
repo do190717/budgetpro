@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { AppState, Project, LineItem, Deduction, MaasarPayment, RecurringPayment, RecurringGeneralItem } from './types';
 
+const todayStr = () => new Date().toISOString().split('T')[0];
+
 const defaultDeductions: Deduction[] = [
   { id: '1', name: 'מס הכנסה', pct: 25, enabled: false },
   { id: '2', name: 'ביטוח לאומי', pct: 12, enabled: false },
@@ -101,12 +103,12 @@ export async function saveProjectToDB(project: Project): Promise<void> {
   const allItems = [
     ...project.income.map((li, i) => ({
       id: li.id, project_id: project.id, type: 'income',
-      description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i,
+      description: li.desc, amount: li.amount, note: li.note, date: li.date || todayStr(), sort_order: i,
       vatable: li.vatable ?? true,
     })),
     ...project.expense.map((li, i) => ({
       id: li.id, project_id: project.id, type: 'expense',
-      description: li.desc, amount: li.amount, note: li.note, date: li.date || '', sort_order: i,
+      description: li.desc, amount: li.amount, note: li.note, date: li.date || todayStr(), sort_order: i,
       vatable: li.vatable ?? true,
     })),
   ];
@@ -211,7 +213,7 @@ export async function saveGeneralItemsToDB(items: LineItem[], type: 'income' | '
     id: li.id, user_id: user.id, type: dbType,
     expense_category: dbCategory,
     description: li.desc, amount: li.amount,
-    note: li.note, date: li.date || '', sort_order: i,
+    note: li.note, date: li.date || todayStr(), sort_order: i,
     vatable: li.vatable ?? true,
   }));
 

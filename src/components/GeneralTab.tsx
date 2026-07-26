@@ -5,7 +5,7 @@ import { AppState, LineItem, RecurringGeneralItem } from '@/lib/types';
 import { generateId } from '@/lib/storage';
 import { deleteGeneralItemFromDB } from '@/lib/db';
 import { colors } from '@/lib/theme';
-import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, calcGeneralHomeBalance, fmt } from '@/lib/calculations';
+import { calcGeneralIncome, calcGeneralExpense, calcGeneralBusinessProfit, fmt } from '@/lib/calculations';
 import ConfirmModal from './ConfirmModal';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
@@ -42,7 +42,7 @@ const TABLE_CONFIG = {
     zebraColor: colors.zebraExpense, recurringType: 'expenseWork' as RecurringGeneralItem['type'],
   },
   generalExpenseHome: {
-    label: 'הוצאות ביתיות', sub: 'לא מתקזזות מהמעשר',
+    label: 'הוצאות רכב', sub: 'לא מתקזזות מהמעשר',
     headerBg: colors.purple, summaryBg: colors.purpleBg, summaryColor: colors.purpleDeep,
     zebraColor: colors.zebraHome, recurringType: 'expenseHome' as RecurringGeneralItem['type'],
   },
@@ -97,14 +97,14 @@ export default function GeneralTab({ state, onStateChange }: Props) {
   const totalExpenseWork = calcGeneralExpense(generalExpenseWork);
   const totalExpenseHome = calcGeneralExpense(generalExpenseHome);
   const businessProfit = calcGeneralBusinessProfit(state);
-  const homeBalance = calcGeneralHomeBalance(state);
 
   const toggleExpand = (id: string) => {
     setExpandedRows(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
   };
 
   const updateItem = (field: TableType, itemId: string, key: keyof LineItem, value: string | number) => {
-    onStateChange({ ...state, [field]: (state[field] as LineItem[]).map((item: LineItem) => item.id === itemId ? { ...item, [key]: value } : item) });
+    const safeValue = key === 'date' && !value ? todayStr() : value;
+    onStateChange({ ...state, [field]: (state[field] as LineItem[]).map((item: LineItem) => item.id === itemId ? { ...item, [key]: safeValue } : item) });
   };
 
   const toggleVat = (field: TableType, itemId: string) => {
@@ -451,16 +451,9 @@ export default function GeneralTab({ state, onStateChange }: Props) {
             </div>
             <span style={{ fontSize: '16px', textAlign: 'left', fontWeight: '600', color: businessProfit >= 0 ? colors.greenText : colors.red }}>{fmt(businessProfit)}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '10px 14px', borderBottom: `1px solid ${colors.gray100}` }}>
-            <span style={{ fontSize: '13px', color: colors.gray700 }}>הוצאות ביתיות</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '10px 14px' }}>
+            <span style={{ fontSize: '13px', color: colors.gray700 }}>הוצאות רכב</span>
             <span style={{ fontSize: '13px', textAlign: 'left', color: colors.purple, fontWeight: '500' }}>− {fmt(totalExpenseHome)}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '11px 14px', background: homeBalance >= 0 ? colors.purpleBgSoft : colors.redBg }}>
-            <div>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: homeBalance >= 0 ? colors.purpleDeep : colors.redDeep }}>יתרה לבית</span>
-              <div style={{ fontSize: '10px', color: colors.gray400, marginTop: '1px' }}>לאחר הוצאות ביתיות</div>
-            </div>
-            <span style={{ fontSize: '16px', textAlign: 'left', fontWeight: '600', color: homeBalance >= 0 ? colors.purple : colors.red }}>{fmt(homeBalance)}</span>
           </div>
         </div>
       </div>
@@ -478,7 +471,7 @@ export default function GeneralTab({ state, onStateChange }: Props) {
           {recurringItems.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: colors.gray400, fontSize: '13px' }}>אין פריטים קבועים</div>
           ) : recurringItems.map(rg => {
-            const typeLabel = rg.type === 'income' ? 'הכנסה' : rg.type === 'expenseWork' ? 'עסקית' : 'ביתית';
+            const typeLabel = rg.type === 'income' ? 'הכנסה' : rg.type === 'expenseWork' ? 'עסקית' : 'רכב';
             const typeColor = rg.type === 'income' ? { bg: colors.greenBg, color: colors.greenLabel } : rg.type === 'expenseWork' ? { bg: colors.orangeBg, color: colors.orangeText } : { bg: colors.purpleBg, color: colors.purpleDeep };
             return (
               <div key={rg.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: '10px', borderBottom: `1px solid ${colors.gray100}`, background: rg.enabled ? colors.cardZebraB : colors.gray50 }}>

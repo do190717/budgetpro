@@ -83,11 +83,6 @@ export function calcGeneralBusinessProfit(state: AppState): number {
   return calcGeneralIncome(state.generalIncome || []) - calcGeneralExpense(state.generalExpenseWork || []);
 }
 
-// יתרה לבית = רווח עסקי - הוצאות ביתיות
-export function calcGeneralHomeBalance(state: AppState): number {
-  return calcGeneralBusinessProfit(state) - calcGeneralExpense(state.generalExpenseHome || []);
-}
-
 // בסיס מעשר = רווח פרויקטים + רווח עסקי כללי (הכנסות - הוצאות עסקיות)
 export function calcGrandTotalProfit(state: AppState): number {
   return calcTotalProfit(state.projects) + calcGeneralBusinessProfit(state);

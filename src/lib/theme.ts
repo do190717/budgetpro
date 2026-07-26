@@ -37,12 +37,11 @@ export const colors = {
   redBg: '#FEF2F2',
   redBgSoft: '#FCEBEB',   // רקע יתרת חוב
 
-  // ביתי (סגול)
+  // רכב (סגול)
   purple: '#7C3AED',
   purpleDeep: '#4C1D95',
   purpleBg: '#EDE9FE',
-  purpleBgSoft: '#F5F3FF', // רקע יתרה לבית חיובית
-  zebraHome: '#FAF8FF',    // פס זברה לטבלת הוצאות ביתיות
+  zebraHome: '#FAF8FF',    // פס זברה לטבלת הוצאות רכב
 
   // מעשר / ענבר
   yellow: '#FCD34D',      // אזהרת תאריך סיום חסר
